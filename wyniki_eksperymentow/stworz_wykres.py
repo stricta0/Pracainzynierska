@@ -1,7 +1,8 @@
-from typing import Tuple, Iterable, Sequence, Mapping, Any, List
+from typing import Tuple, Iterable, Sequence, Mapping, Any, List, Optional, Dict
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from pathlib import Path
 
 def is_int(s):
     try:
@@ -23,25 +24,151 @@ def change_type_from_file_string(value):
         value = int(value)
     return value
 
-def get_all_files_paths_from_directory(directory_path: str) -> List[str]:
+def get_all_files_paths_from_directory(
+    directory_path: str,
+    ignorowane_rozszerzenia: Optional[Iterable[str]] = None,
+    ignore_file_names: Optional[Iterable[str]] = None,
+) -> List[str]:
     """
-    Zwraca listę *absolutnych* ścieżek do wszystkich plików w podanym katalogu (rekurencyjnie).
-    Nie podąża za dowiązaniami symbolicznymi do katalogów.
+    Zwraca listę *absolutnych* ścieżek do wszystkich plików w podanym katalogu (rekurencyjnie),
+    z filtrami:
+      - ignorowane_rozszerzenia: np. ["pdf", "jpg"]  -> pomija pliki o tych rozszerzeniach
+      - ignore_file_names: np. ["readme.md", "wynik_koncowy.txt"] -> pomija pliki o tych nazwach
+    Porównania są niewrażliwe na wielkość liter. Nazwy w ignore_file_names podaj BEZ ścieżek.
 
-    :param directory_path: Ścieżka do katalogu startowego.
-    :return: Posortowana lista absolutnych ścieżek plików.
-    :raises ValueError: Gdy ścieżka nie istnieje lub nie jest katalogiem.
+    :param directory_path: ścieżka do katalogu startowego
+    :return: posortowana lista absolutnych ścieżek plików
+    :raises ValueError: gdy ścieżka nie istnieje lub nie jest katalogiem
     """
     if not os.path.isdir(directory_path):
         raise ValueError(f"Ścieżka '{directory_path}' nie jest katalogiem lub nie istnieje.")
 
+    ignore_exts = {ext.lower().lstrip(".") for ext in (ignorowane_rozszerzenia or [])}
+    ignore_names = {os.path.basename(str(n)).lower() for n in (ignore_file_names or [])}
+
     file_paths: List[str] = []
-    for root, dirs, files in os.walk(directory_path, topdown=True, followlinks=False):
+    for root, _, files in os.walk(directory_path, topdown=True, followlinks=False):
         for name in files:
-            file_paths.append(os.path.abspath(os.path.join(root, name)))
+            base = os.path.basename(name)
+            base_l = base.lower()
+            if base_l in ignore_names:
+                continue
+            ext = os.path.splitext(base_l)[1].lstrip(".")  # np. ".PDF" -> "pdf"
+            if ext in ignore_exts:
+                continue
+            file_paths.append(os.path.abspath(os.path.join(root, base)))
 
     file_paths.sort()
     return file_paths
+
+from typing import Sequence, Iterable
+
+def make_stats_text(
+    hidden_size_tab: Sequence[int],
+    train_loss_tab: Sequence[float],
+    val_loss_tab: Sequence[float],
+    val_acc_tab: Sequence[float],
+    *,
+    title: str = "Statystyki vs. rozmiar warstwy ukrytej",
+    show_raw: bool = False,
+    loss_prec: int = 6,
+    acc_prec: int = 4,
+    include_acc_percent: bool = True,
+    sep: str = " | ",
+) -> str:
+    """
+    Buduje czytelny tekst do wklejenia do .txt:
+    - (opcjonalnie) blok surowych tablic wejściowych,
+    - Tabela oryginalna (kolejność wejściowa),
+    - Tabela posortowana po val_acc (malejąco),
+    - Tabela posortowana po val_loss (malejąco).
+    """
+    h = list(hidden_size_tab)
+    tl = list(train_loss_tab)
+    vl = list(val_loss_tab)
+    va = list(val_acc_tab)
+
+    n = len(h)
+    if not (len(tl) == len(vl) == len(va) == n):
+        raise ValueError("Wszystkie tablice muszą mieć taką samą długość.")
+
+    def fmt_list(vals: Iterable, *, prec: int | None = None, ints: bool = False) -> str:
+        if ints:
+            return "[" + ", ".join(str(int(v)) for v in vals) + "]"
+        if prec is None:
+            return "[" + ", ".join(str(v) for v in vals) + "]"
+        return "[" + ", ".join(f"{float(v):.{prec}f}" for v in vals) + "]"
+
+    def build_rows(data):
+        """data: iterable z krotek (hidden, train_loss, val_loss, val_acc)"""
+        rows = []
+        for hh, t, v, a in data:
+            row = [
+                str(int(hh)),
+                f"{float(t):.{loss_prec}f}",
+                f"{float(v):.{loss_prec}f}",
+                f"{float(a):.{acc_prec}f}",
+            ]
+            if include_acc_percent:
+                row.append(f"{float(a)*100:.2f}%")
+            rows.append(row)
+        return rows
+
+    def fmt_table(rows, headers):
+        """Zwraca listę linii tekstu tabeli (z nagłówkiem i kreską)."""
+        widths = [
+            max(len(hd), max((len(r[i]) for r in rows), default=0))
+            for i, hd in enumerate(headers)
+        ]
+        def fmt_row(cells):
+            return sep.join(cell.ljust(widths[i]) for i, cell in enumerate(cells))
+        sep_len = len(sep) * (len(headers) - 1)
+        line_len = sum(widths) + sep_len
+        lines = [fmt_row(headers), "-" * line_len]
+        lines.extend(fmt_row(r) for r in rows)
+        return lines
+
+    headers = ["hidden", "train_loss", "val_loss", "val_acc"]
+    if include_acc_percent:
+        headers.append("val_acc_%")
+
+    data = list(zip(h, tl, vl, va))
+
+    # 1) oryginalna
+    rows_orig = build_rows(data)
+    # 2) sort po val_acc (malejąco)
+    data_desc_acc = sorted(data, key=lambda t: t[3], reverse=True)
+    rows_desc_acc = build_rows(data_desc_acc)
+    # 3) sort po val_loss (malejąco)
+    data_desc_loss = sorted(data, key=lambda t: t[2], reverse=True)
+    rows_desc_loss = build_rows(data_desc_loss)
+
+    lines = []
+    if title:
+        lines.append(title)
+        lines.append("-" * len(title))
+
+    if show_raw:
+        lines.append("Wejściowe tablice:")
+        lines.append(f"hidden_size_tab : {fmt_list(h, ints=True)}")
+        lines.append(f"train_loss_tab  : {fmt_list(tl, prec=loss_prec)}")
+        lines.append(f"val_loss_tab    : {fmt_list(vl, prec=loss_prec)}")
+        lines.append(f"val_acc_tab     : {fmt_list(va, prec=acc_prec)}")
+        lines.append("")
+
+    lines.append("Tabela (oryginalna kolejność):")
+    lines.extend(fmt_table(rows_orig, headers))
+    lines.append("")
+
+    lines.append("Tabela (posortowana po val_acc ↓):")
+    lines.extend(fmt_table(rows_desc_acc, headers))
+    lines.append("")
+
+    lines.append("Tabela (posortowana po val_loss ↓):")
+    lines.extend(fmt_table(rows_desc_loss, headers))
+
+    return "\n".join(lines)
+
 
 
 def create_plot(
@@ -72,13 +199,19 @@ def create_plot(
     vector_format: str = "pdf",  # "pdf" | "svg" | "eps"
     transparent: bool = False,
     tight_layout: bool = True,
+    # --- ścieżka zapisu ---
+    save_path: str | Path | None = None,  # katalog do zapisu (absolutny lub względny)
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Rysuje wiele linii (x vs y) na jednym wykresie. x i y to listy słowników:
       {"tab": <tablica>, "name": "etykieta", "color": "blue"}
     Dla każdej serii i: parujemy x[i] z y[i].
 
-    Zwraca (fig, ax). Opcjonalnie zapisuje wektorowo do save_name.<format>.
+    Zwraca (fig, ax). Opcjonalnie zapisuje wektorowo do <save_path>/<save_name>.<format>.
+
+    Parametry zapisu:
+    - save_path: katalog docelowy (utworzy się automatycznie). Gdy None -> bieżący katalog.
+    - vector_format: "pdf" (domyślnie), "svg" lub "eps".
     """
     allowed_formats = {"pdf", "svg", "eps"}
     vf = vector_format.lower()
@@ -132,7 +265,13 @@ def create_plot(
         fig.tight_layout()
 
     if save:
-        filename = f"{save_name}.{vf}"
+        # Ustal katalog docelowy
+        out_dir = Path.cwd() if save_path is None else Path(save_path).expanduser().resolve()
+        if out_dir.exists() and not out_dir.is_dir():
+            raise ValueError(f"save_path '{out_dir}' wskazuje na plik, a nie katalog.")
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        filename = out_dir / f"{save_name}.{vf}"
         fig.savefig(
             filename,
             format=vf,
@@ -187,19 +326,18 @@ def add_file_to_plot_tabs(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size
     val_acc_tab.append(best_line_dict["val_acc"])
 
 
-def create_plot_from_directory(directory_path, algo_name=None,  start_data_line_index=2):
+def create_plot_from_directory(directory_path, save_path=None, algo_name=None,  start_data_line_index=2):
     if algo_name is None:
         algo_name = directory_path.split("/")[-2]
     train_loss_tab = []
     val_loss_tab = []
     val_acc_tab = []
     hidden_size_tab = []
-    files = get_all_files_paths_from_directory(directory_path)
+    files = get_all_files_paths_from_directory(directory_path, ignorowane_rozszerzenia=["pdf"], ignore_file_names=["wynik_koncowy.txt"])
     start_data_dict, best_line_dict = get_values_from_wynik_file(files[0], start_data_line_index)
     data_set = start_data_dict["dataset"]
     files.sort(key=lambda x: get_values_from_wynik_file(x, start_data_line_index)[0]["hidden"])
     for path in files:
-        print(path)
         add_file_to_plot_tabs(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab, path, start_data_line_index)
 
     x = [
@@ -210,44 +348,96 @@ def create_plot_from_directory(directory_path, algo_name=None,  start_data_line_
         {"tab": train_loss_tab, "name": "train loss"},
         {"tab": val_loss_tab, "name": "validation loss"},
     ]
-    print(f"hidden_size_tab : {hidden_size_tab}")
-    print(f"train_loss_tab : {train_loss_tab}")
-    print(f"val_loss_tab : {val_loss_tab}")
-    print(f"val_acc_tab : {val_acc_tab}")
+    additional_data = make_stats_text(
+    hidden_size_tab, train_loss_tab, val_loss_tab, val_acc_tab,
+    title=f"Wpływ rozmiaru warstwy ukrytej na metryki modelu {algo_name} na zbiorze {data_set}"
+    )
+    txt_file_path = Path(save_path) / "wynik_koncowy.txt"
+    with open(txt_file_path, "w") as f:
+        f.write(additional_data)
+
+
     fig, ax = create_plot(
         x, y,
         plot_name=f"Wpływ rozmiaru warstwy ukrytej na metryki modelu {algo_name} na zbiorze {data_set}",
         x_name="rozmiar warstwy ukrytej",
         y_name="wartosci metryk",
         vector_format="pdf",
-        save=True, save_name=f"{algo_name}_{data_set}",
+        save=True, save_name=f"{algo_name}_{data_set}", save_path=save_path,
         marker="o"
     )
 
-    return fig, ax
-# # --- Przykład użycia ---
-# x = [
-#     {"tab": [0, 1, 2, 3], "name": "x dla kwadratu", "color": "blue"},
-#     {"tab": [0, 1, 2, 3], "name": "x dla sześcianu", "color": "#ff7f0e"},
-# ]
-# y = [
-#     {"tab": [0, 1, 4, 9],  "name": "y = x^2", "color": "blue"},
-#     {"tab": [0, 1, 8, 27], "name": "y = x^3", "color": "#ff7f0e"},
-# ]
-#
-# fig, ax = create_plot(
-#     x, y,
-#     plot_name="Porównanie funkcji potęgowych",
-#     x_name="x", y_name="y",
-#     vector_format="pdf",  # wektorowo
-#     save=True, save_name="potegi"
-# )
+    return fig, ax, additional_data
 
+def stworz_wszystkie_wykresy(
+    wykresy_path: str | Path = "/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy",
+    *,
+    verbose: bool = True,
+) -> Dict[str, List[str] | List[Tuple[str, str]]]:
+    """
+    Uruchamia create_plot_from_directory dla wszystkich katalogów pod wykresy_path,
+    które zawierają *jakiekolwiek pliki*. Puste katalogi są ignorowane.
 
+    Zwraca dict:
+      {
+        "processed":       [<ścieżki przetworzonych>],
+        "skipped_empty":   [<ścieżki pustych katalogów>],
+        "errors":          [(<ścieżka>, <komunikat błędu>), ...]
+      }
+    """
+    root = Path(wykresy_path).expanduser().resolve()
+    if not root.is_dir():
+        raise ValueError(f"Ścieżka '{root}' nie jest katalogiem lub nie istnieje.")
 
-# print(get_all_files_paths_from_directory("mlp/mnist"))
-# start_data, best_line_dict = get_values_from_wynik_file("mlp/mnist/wyniki_przyklad.txt")
-# print(start_data)
-# print(best_line_dict)
+    processed: List[str] = []
+    skipped_empty: List[str] = []
+    errors: List[Tuple[str, str]] = []
 
-create_plot_from_directory("mlp/mnist")
+    # Przejdź po wszystkich podkatalogach
+    for d in sorted([p for p in root.rglob("*") if p.is_dir()]):
+        try:
+            entries = list(d.iterdir())
+        except Exception as e:
+            msg = f"Nie można odczytać zawartości: {e}"
+            errors.append((str(d), msg))
+            if verbose:
+                print(f"[ERR] {d}: {msg}")
+            continue
+
+        if not entries:
+            # katalog pusty
+            skipped_empty.append(str(d))
+            if verbose:
+                print(f"[SKIP] pusty: {d}")
+            continue
+
+        # Czy katalog zawiera *jakiekolwiek pliki*?
+        has_file = any(ch.is_file() for ch in entries)
+        if not has_file:
+            # To raczej węzeł pośredni (zawiera kolejne katalogi). Idziemy dalej.
+            continue
+
+        # To katalog „z wykresem”: odpalamy generator
+        try:
+            create_plot_from_directory(str(d), save_path=str(d))
+            processed.append(str(d))
+            if verbose:
+                print(f"[OK] {d}")
+        except Exception as e:
+            errors.append((str(d), str(e)))
+            if verbose:
+                print(f"[ERR] {d}: {e}")
+
+    return {
+        "processed": processed,
+        "skipped_empty": skipped_empty,
+        "errors": errors,
+    }
+
+#create_plot_from_directory("/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy/mlp/mnist/wykres1_pierwsza_pr", save_path="/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy/mlp/mnist/wykres1_pierwsza_pr")
+wynik = stworz_wszystkie_wykresy(verbose=False)
+print(wynik["processed"])
+print("-"*100)
+print("ERRORS")
+print("-"*100)
+print(wynik["errors"])

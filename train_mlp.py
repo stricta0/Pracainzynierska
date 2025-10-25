@@ -129,7 +129,7 @@ def train_one_run(args):
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() and not args.cpu else "cpu")
     add_line_to_file(f"Using device: {device}, type: {device.type}", args.log_file)
-    train_loader, test_loader, num_classes = get_loaders(args.dataset, args.batch_size)
+    train_loader, test_loader, num_classes = get_loaders(args.dataset_name, args.batch_size)
     model = MLP(hidden=args.hidden, num_classes=num_classes).to(device)
     add_line_to_file(f"Model: MLP(hidden={args.hidden}, num_classes={num_classes})", args.log_file)
     add_line_to_file(get_args_log_line(args), args.log_file)
@@ -177,7 +177,7 @@ def train_one_run(args):
             epoch_without_improvement = 0
             best_acc = val_acc
             best_epoch = epoch
-            ckpt_path = f"checkpoints/mlp_{args.dataset}_h{args.hidden}.pt"
+            ckpt_path = f"checkpoints/mlp_{args.dataset_name}_h{args.hidden}.pt"
             torch.save({"model_state": model.state_dict(),
                         "hidden": args.hidden,
                         "num_classes": num_classes}, ckpt_path)

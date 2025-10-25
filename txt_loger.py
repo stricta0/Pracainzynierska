@@ -44,7 +44,7 @@ class Loger:
 
     @staticmethod
     def get_args_log_line(args, sep=" | "):
-        items = vars(args).items()
+        items = args.items()
         line = sep.join(f"{k}={Loger._fmt_arg(v)}" for k, v in items)
 
         return line

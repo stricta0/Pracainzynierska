@@ -434,10 +434,58 @@ def stworz_wszystkie_wykresy(
         "errors": errors,
     }
 
+
+def create_plot_from_directory_kompresja(directory_path, save_path=None, algo_name=None,  start_data_line_index=2):
+    if algo_name is None:
+        algo_name = directory_path.split("/")[-2]
+    train_loss_tab = []
+    val_loss_tab = []
+    val_acc_tab = []
+    hidden_size_tab = []
+    files = get_all_files_paths_from_directory(directory_path, ignorowane_rozszerzenia=["pdf"], ignore_file_names=["wynik_koncowy.txt"])
+    start_data_dict, best_line_dict = get_values_from_wynik_file(files[0], start_data_line_index)
+    data_set = start_data_dict["dataset"]
+    files.sort(key=lambda x: get_values_from_wynik_file(x, start_data_line_index)[0]["hidden"])
+    for path in files:
+        add_file_to_plot_tabs(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab, path, start_data_line_index)
+
+    x = [
+        {"tab": hidden_size_tab, "name": "hidden size"},
+        {"tab": hidden_size_tab, "name": "hidden size"},
+    ]
+    y = [
+        {"tab": train_loss_tab, "name": "train loss"},
+        {"tab": val_loss_tab, "name": "validation loss"},
+    ]
+    additional_data = make_stats_text(
+    hidden_size_tab, train_loss_tab, val_loss_tab, val_acc_tab,
+    title=f"Wpływ rozmiaru warstwy ukrytej na metryki modelu {algo_name} na zbiorze {data_set}"
+    )
+    txt_file_path = Path(save_path) / "wynik_koncowy.txt"
+    with open(txt_file_path, "w") as f:
+        f.write(additional_data)
+
+
+    fig, ax = create_plot(
+        x, y,
+        plot_name=f"Wpływ rozmiaru warstwy ukrytej na metryki modelu {algo_name} na zbiorze {data_set}",
+        x_name="rozmiar warstwy ukrytej",
+        y_name="wartosci metryk",
+        vector_format="pdf",
+        save=True, save_name=f"{algo_name}_{data_set}", save_path=save_path,
+        marker="o"
+    )
+
+    return fig, ax, additional_data
 #create_plot_from_directory("/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy/mlp/mnist/wykres1_pierwsza_pr", save_path="/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy/mlp/mnist/wykres1_pierwsza_pr")
-wynik = stworz_wszystkie_wykresy(verbose=False)
-print(wynik["processed"])
-print("-"*100)
-print("ERRORS")
-print("-"*100)
-print(wynik["errors"])
+
+
+# wynik = stworz_wszystkie_wykresy(verbose=False)
+# print(wynik["processed"])
+# print("-"*100)
+# print("ERRORS")
+# print("-"*100)
+# print(wynik["errors"])
+
+create_plot_from_directory_kompresja("/home/miku/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1", save_path="/home/miku/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1")
+

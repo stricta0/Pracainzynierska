@@ -20,6 +20,8 @@ class Loger:
         with open(self.file_name, "a", encoding="utf-8") as f:
             f.write(line)
 
+    def set_file_name(self, file_name):
+        self.file_name = file_name
     @staticmethod
     def _fmt_arg(v):
         """Estetyczne formatowanie wartości do loga."""

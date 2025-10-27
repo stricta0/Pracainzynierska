@@ -1,0 +1,14 @@
+Using device: cuda, type: cuda
+Model: MLP(hidden=5000, num_classes=10)
+dataset=mnist | hidden=5000 | batch_size=128 | epochs=10 | patience=10 | lr=0.001 | seed=42 | momentum=0.95 | log_file=z_snapshotem3.txt | cpu=None
+[Epoch 01] train_loss=0.478821 | train_acc=89.720000% | train_correct=53832 | train_total=60000 | val_loss=0.2852015 | val_acc=92.2200000% | interpolacja=False | soft_intepolacja=False
+[Epoch 02] train_loss=0.272273 | train_acc=92.486667% | train_correct=55492 | train_total=60000 | val_loss=0.2443404 | val_acc=93.1600000% | interpolacja=False | soft_intepolacja=False
+[Epoch 03] train_loss=0.236435 | train_acc=93.531667% | train_correct=56119 | train_total=60000 | val_loss=0.2218437 | val_acc=93.8300000% | interpolacja=False | soft_intepolacja=False
+[Epoch 04] train_loss=0.212737 | train_acc=94.138333% | train_correct=56483 | train_total=60000 | val_loss=0.2003778 | val_acc=94.3900000% | interpolacja=False | soft_intepolacja=False
+[Epoch 05] train_loss=0.195824 | train_acc=94.595000% | train_correct=56757 | train_total=60000 | val_loss=0.1872142 | val_acc=94.7300000% | interpolacja=False | soft_intepolacja=False
+[Epoch 06] train_loss=0.180872 | train_acc=94.976667% | train_correct=56986 | train_total=60000 | val_loss=0.1755452 | val_acc=95.0300000% | interpolacja=False | soft_intepolacja=False
+[Epoch 07] train_loss=0.169327 | train_acc=95.313333% | train_correct=57188 | train_total=60000 | val_loss=0.1653185 | val_acc=95.3200000% | interpolacja=False | soft_intepolacja=False
+[Epoch 08] train_loss=0.158525 | train_acc=95.638333% | train_correct=57383 | train_total=60000 | val_loss=0.1574073 | val_acc=95.5100000% | interpolacja=False | soft_intepolacja=False
+[Epoch 09] train_loss=0.149248 | train_acc=95.923333% | train_correct=57554 | train_total=60000 | val_loss=0.1504239 | val_acc=95.7100000% | interpolacja=False | soft_intepolacja=False
+[Epoch 10] train_loss=0.141452 | train_acc=96.150000% | train_correct=57690 | train_total=60000 | val_loss=0.1448225 | val_acc=95.8800000% | interpolacja=False | soft_intepolacja=False
+Best val_acc: 95.88%, on epoch: 10

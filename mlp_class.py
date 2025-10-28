@@ -257,7 +257,7 @@ class MLP_Whole:
                 alive_sum += ab; total_sum += Tb
 
         Pm = 100.0 * alive_sum / max(1, total_sum)
-        return f"[PRUNE] Pm={Pm:.3f}% | " + " | ".join(lines)
+        return f"PRUNE | Pm={Pm:.3f}% | " + " | ".join(lines)
 
 
     # -------------------- PURING --------------------
@@ -350,23 +350,26 @@ class MLP_Whole:
         licznik, aktualna_wartosc_procentowa = self.licz_kroki_do_kompresji(calkowity_stopien_kompresji, rozmiar_kroku)
         self.snapshot_theta0()
         os.makedirs(log_dict_name, exist_ok=False)
+        self.update_args_dict()
+        self.loger.set_file_name(f"{log_dict_name}/kompresja.txt")
+        self.loger.add_line_to_file(self.loger.get_args_log_line(self.args_dict))
         for i in range(licznik):
             self.loger.set_file_name(f"{log_dict_name}/trening_{i}.txt" )
             self.train_model()
             val_loss, val_acc = self.evaluate()
             self.loger.set_file_name(f"{log_dict_name}/kompresja.txt")
-            self.loger.add_line_to_file(f"[{i}]{self.prune_report_to_str(self.model, include_bias=True)} | val_loss: {val_loss} | val_acc: {val_acc}")
+            self.loger.add_line_to_file(f"{i} | {self.prune_report_to_str(self.model, include_bias=True)} | val_loss: {val_loss} | val_acc: {val_acc}")
             self.kompresuj(rozmiar_kroku)
         self.loger.set_file_name(f"{log_dict_name}/trening_{licznik}.txt")
         self.train_model()
         val_loss, val_acc = self.evaluate()
         self.loger.set_file_name(f"{log_dict_name}/kompresja.txt")
-        self.loger.add_line_to_file(f"[{licznik}]{self.prune_report_to_str(self.model, include_bias=True)} | val_loss: {val_loss} | val_acc: {val_acc}")
+        self.loger.add_line_to_file(f"{licznik} | {self.prune_report_to_str(self.model, include_bias=True)} | val_loss: {val_loss} | val_acc: {val_acc}")
         return licznik, aktualna_wartosc_procentowa
 
 # ---------- CLI ----------
 if __name__ == "__main__":
-    mlp = MLP_Whole(dataset_name="mnist", hidden=5000, batch_size=128, epochs=10, patience=10, lr=0.001, seed=42, momentum=0.95, log_file="z_snapshotem3.txt", cpu=None)
+    mlp = MLP_Whole(dataset_name="mnist", hidden=5000, batch_size=128, epochs=1000, patience=100, lr=0.001, seed=42, momentum=0.95, log_file="z_snapshotem3.txt", cpu=None)
     print(mlp.kompresja_iteracyjna(90, 4, "kompresja_iteracyjna_wyniki_2"))
     print(mlp.kompresja_iteracyjna(90, 4, "kompresja_iteracyjna_wyniki_3"))
     print(mlp.kompresja_iteracyjna(90, 4, "kompresja_iteracyjna_wyniki_4"))

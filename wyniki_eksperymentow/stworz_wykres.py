@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 import os
 from pathlib import Path
 
+# ============== HELPERS ===================
 def is_int(s):
+    """
+    sprawdza czy s jest intem
+    """
     try:
         int(s.strip())
         return True
@@ -12,6 +16,9 @@ def is_int(s):
         return False
 
 def change_type_from_file_string(value):
+    """
+    zamienia value na float, int, bool lub string w zaleznosci od jak wyglada value
+    """
     if value[-1] == "%":
         value = float(value[:-1]) / 100.0
     elif "." in value:
@@ -24,11 +31,7 @@ def change_type_from_file_string(value):
         value = int(value)
     return value
 
-def get_all_files_paths_from_directory(
-    directory_path: str,
-    ignorowane_rozszerzenia: Optional[Iterable[str]] = None,
-    ignore_file_names: Optional[Iterable[str]] = None,
-) -> List[str]:
+def get_all_files_paths_from_directory(directory_path, ignorowane_rozszerzenia = None, ignore_file_names = None):
     """
     Zwraca listę *absolutnych* ścieżek do wszystkich plików w podanym katalogu (rekurencyjnie),
     z filtrami:
@@ -37,6 +40,8 @@ def get_all_files_paths_from_directory(
     Porównania są niewrażliwe na wielkość liter. Nazwy w ignore_file_names podaj BEZ ścieżek.
 
     :param directory_path: ścieżka do katalogu startowego
+    :param ignorowane_rozszerzenia: lista rozszerzen ktore ignorujemy
+    :param ignore_file_names: lista ignorowanych plikow z katalogu
     :return: posortowana lista absolutnych ścieżek plików
     :raises ValueError: gdy ścieżka nie istnieje lub nie jest katalogiem
     """
@@ -61,9 +66,193 @@ def get_all_files_paths_from_directory(
     file_paths.sort()
     return file_paths
 
-from typing import Sequence, Iterable
+# ============== TWORZNIE WYKRESOW ===================
+def create_plot(
+    x: Sequence[Mapping[str, Any]],
+    y: Sequence[Mapping[str, Any]],
+    plot_name: str,
+    x_name: str,
+    y_name: str,
+    save: bool = True,
+    save_name: str = "przykladowy_wykres",
+    *,
+    # --- estetyka (domyślne wartości można nadpisać) ---
+    figsize: Tuple[float, float] = (7.0, 5.0),
+    line_style: str = "-",
+    line_width: float = 2.0,
+    marker: str = "",            # np. "o", "s", "^"; pusty = bez markerów
+    marker_size: float = 6.0,
+    alpha: float = 1.0,
+    grid: bool = True,
+    grid_style: str = "--",
+    grid_alpha: float = 0.3,
+    title_size: int = 14,
+    label_size: int = 12,
+    tick_size: int = 10,
+    # --- kolor domyślny dla serii bez 'color' ---
+    default_color: str | None = None,  # None => cykl Matplotlib
+    # --- zapis wektorowy ---
+    vector_format: str = "pdf",  # "pdf" | "svg" | "eps"
+    transparent: bool = False,
+    tight_layout: bool = True,
+    # --- ścieżka zapisu ---
+    save_path: str | Path | None = None,  # katalog do zapisu (absolutny lub względny)
+) -> Tuple[plt.Figure, plt.Axes]:
+    """
+    Rysuje wiele linii (x vs y) na jednym wykresie. x i y to listy słowników:
+      {"tab": <tablica>, "name": "etykieta", "color": "blue"}
+    gdzie color jest opcjonalny
+    Dla każdej serii i: parujemy x[i] z y[i].
 
-def make_stats_text(
+    Zwraca (fig, ax). Opcjonalnie zapisuje wektorowo do <save_path>/<save_name>.<format>.
+
+    Parametry zapisu:
+    - save_path: katalog docelowy (utworzy się automatycznie). Gdy None -> bieżący katalog.
+    - vector_format: "pdf" (domyślnie), "svg" lub "eps".
+    """
+    allowed_formats = {"pdf", "svg", "eps"}
+    vf = vector_format.lower()
+    if vf not in allowed_formats:
+        raise ValueError(f"vector_format musi być jednym z {allowed_formats}, a jest '{vector_format}'.")
+
+    if len(x) != len(y):
+        raise ValueError(f"Liczba serii w x ({len(x)}) musi równać się liczbie serii w y ({len(y)}).")
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    for i, (xd, yd) in enumerate(zip(x, y), start=1):
+        if not isinstance(xd, Mapping) or not isinstance(yd, Mapping):
+            raise TypeError("Elementy x i y muszą być słownikami.")
+        if "tab" not in xd or "tab" not in yd:
+            raise KeyError("Każdy słownik musi zawierać klucz 'tab' z tablicą wartości.")
+
+        xi = np.asarray(xd["tab"], dtype=float).ravel()
+        yi = np.asarray(yd["tab"], dtype=float).ravel()
+        if xi.shape != yi.shape:
+            raise ValueError(f"Seria {i}: różna liczba punktów: len(x)={xi.size}, len(y)={yi.size}.")
+
+        # etykieta i kolor: preferuj dane z 'y', potem z 'x', potem domyślne
+        label = yd.get("name") or xd.get("name") or f"linia_{i}"
+        color = yd.get("color", xd.get("color", default_color))
+
+        plot_kwargs = dict(
+            linestyle=line_style,
+            linewidth=line_width,
+            marker=(marker if marker else None),
+            markersize=marker_size,
+            alpha=alpha,
+            label=label,
+        )
+        if color is not None:
+            plot_kwargs["color"] = color  # jeśli None, użyj cyklu Matplotlib
+
+        ax.plot(xi, yi, **plot_kwargs)
+
+    ax.set_title(plot_name, fontsize=title_size)
+    ax.set_xlabel(x_name, fontsize=label_size)
+    ax.set_ylabel(y_name, fontsize=label_size)
+    ax.tick_params(labelsize=tick_size)
+
+    if grid:
+        ax.grid(True, linestyle=grid_style, alpha=grid_alpha)
+
+    ax.legend()
+
+    if tight_layout:
+        fig.tight_layout()
+
+    if save:
+        # Ustal katalog docelowy
+        out_dir = Path.cwd() if save_path is None else Path(save_path).expanduser().resolve()
+        if out_dir.exists() and not out_dir.is_dir():
+            raise ValueError(f"save_path '{out_dir}' wskazuje na plik, a nie katalog.")
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        filename = out_dir / f"{save_name}.{vf}"
+        fig.savefig(
+            filename,
+            format=vf,
+            bbox_inches="tight",
+            transparent=transparent,
+        )
+
+    return fig, ax
+
+# =============== PRZETWARZANIE PLIKOW WYNIKOWYCH DOUBLE DESCENT =========================
+def line_to_dict_double_descent_plik(line):
+    """
+    bierze linike z pliku z wynikami eksperymentu double_descent
+    i zwraca slownik z tymi wynikami
+
+    @param line: linia z pliku w str
+
+    returns line w formie slownika
+    """
+    res_dict = {}
+
+    line_list = line.strip().split(" | ")
+    epoch = int(line_list[0].split(" ")[1][:-1])
+    train_loss = float(line_list[0].split(" ")[2].split("=")[1])
+    line_list.pop(0)
+    res_dict["epoch"] = epoch
+    res_dict["train_loss"] = train_loss
+
+    for element in line_list:
+        element = element.strip()
+        elements = element.split("=")
+        value = elements[1]
+        value = change_type_from_file_string(value)
+        res_dict[elements[0]] = value
+
+    return res_dict
+
+
+def get_values_from_wynik_file_double_descent(wynik_file="przyklad_wynik.txt", start_data_line_index=2):
+    """
+    Wyciaga dane z pliku txt double_descent i zwraca w formie pary slownikow
+    @param wynik_file: path do pliku z wynikami double_descent
+    @param start_data_line_index: index gdzie zaczynaja sie dane w piku tekstowym
+
+    returns slownik_argumentow_poczatkowych, slownik_wynikow_najlepszej_epoki
+    slownik_argumentow_poczatkowych - to slownik z informacjami o trenowanym modelu (ilosc wag, epok itd)
+    slownik_wynikow_najlepszej_epoki - slownik wynikow metryk dla najlpszej epoki modelu
+    """
+
+    with open(wynik_file, "r") as f:
+        wynik = f.read().strip().split("\n")
+
+    start_data = wynik[start_data_line_index].strip().split(" | ")
+    start_data_dict = {}
+    for element in start_data:
+        elements = element.split("=")
+        start_data_dict[elements[0]] = change_type_from_file_string(elements[1])
+
+    best_epoch = int(wynik[-1].strip().split(" ")[-1])
+
+    best_line = wynik[best_epoch + start_data_line_index]
+    best_line_dict = line_to_dict_double_descent_plik(best_line)
+    return start_data_dict, best_line_dict
+
+def add_file_to_plot_tabs_double_descent(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab, wynik_file="przyklad_wynik.txt", start_data_line_index=2):
+    """
+    Dodaje dane z pliku tekstowego na temat pojedynczego eksperymtu double descent i
+    dodaje je do wspolnych tablic - tabice sa inplace (faktycznie dodaje)
+    @param train_loss_tab
+    @param val_loss_tab
+    @param val_acc_tab
+    @param hidden_size_tab --- wspolne tablice z wynikami dla wszystkich eksperymentow
+    @param wynik_file: path do pliku z przejscia double descent (do 1 pliku / 1 eksperymentu)
+    @param start_data_line_index  indeks od ktorego zaczynaja sie dane w .txt
+
+    returns NONE (dziala in place)
+    """
+    start_data_dict, best_line_dict = get_values_from_wynik_file_double_descent(wynik_file, start_data_line_index)
+    hidden_size_tab.append(start_data_dict["hidden"])
+    train_loss_tab.append(best_line_dict["train_loss"])
+    val_loss_tab.append(best_line_dict["val_loss"])
+    val_acc_tab.append(best_line_dict["val_acc"])
+
+def make_stats_text_for_double_descent_tables(
     hidden_size_tab: Sequence[int],
     train_loss_tab: Sequence[float],
     val_loss_tab: Sequence[float],
@@ -170,175 +359,34 @@ def make_stats_text(
     return "\n".join(lines)
 
 
-
-def create_plot(
-    x: Sequence[Mapping[str, Any]],
-    y: Sequence[Mapping[str, Any]],
-    plot_name: str,
-    x_name: str,
-    y_name: str,
-    save: bool = True,
-    save_name: str = "przykladowy_wykres",
-    *,
-    # --- estetyka (domyślne wartości można nadpisać) ---
-    figsize: Tuple[float, float] = (7.0, 5.0),
-    line_style: str = "-",
-    line_width: float = 2.0,
-    marker: str = "",            # np. "o", "s", "^"; pusty = bez markerów
-    marker_size: float = 6.0,
-    alpha: float = 1.0,
-    grid: bool = True,
-    grid_style: str = "--",
-    grid_alpha: float = 0.3,
-    title_size: int = 14,
-    label_size: int = 12,
-    tick_size: int = 10,
-    # --- kolor domyślny dla serii bez 'color' ---
-    default_color: str | None = None,  # None => cykl Matplotlib
-    # --- zapis wektorowy ---
-    vector_format: str = "pdf",  # "pdf" | "svg" | "eps"
-    transparent: bool = False,
-    tight_layout: bool = True,
-    # --- ścieżka zapisu ---
-    save_path: str | Path | None = None,  # katalog do zapisu (absolutny lub względny)
-) -> Tuple[plt.Figure, plt.Axes]:
+# =============== TWORZENIE WYKRESOW DOUBLE DESCENT =========================
+def create_plot_from_directory_double_descent(directory_path, save_path=None, algo_name=None, start_data_line_index=2):
     """
-    Rysuje wiele linii (x vs y) na jednym wykresie. x i y to listy słowników:
-      {"tab": <tablica>, "name": "etykieta", "color": "blue"}
-    Dla każdej serii i: parujemy x[i] z y[i].
+    Tworzy wykres z folderu dla eksperymentu double descent
+    @param directory_path: sciezka do tego folderu
+    @param save_path: folder do ktorego zapisujemy wyniki - ten sam co directory_path jesli nie podany
+    @param algo_name: nazwa algorytmu ktory przeriabiamy (potrzebana do nazw itd) bazowo brana z nazwy folderu
+    @param start_data_line_index: informacja o tym na ktorym indeksie zaczynaja sie dane w pliku (=2 oznacza pomin 2 pierwsze linie pliku)
 
-    Zwraca (fig, ax). Opcjonalnie zapisuje wektorowo do <save_path>/<save_name>.<format>.
-
-    Parametry zapisu:
-    - save_path: katalog docelowy (utworzy się automatycznie). Gdy None -> bieżący katalog.
-    - vector_format: "pdf" (domyślnie), "svg" lub "eps".
+    returns fig, ax, additional_data
+    fig, ax - wykres w formie mathplotliba
+    additional_data - tresc dodatkowego pliku .txt z informacjami
     """
-    allowed_formats = {"pdf", "svg", "eps"}
-    vf = vector_format.lower()
-    if vf not in allowed_formats:
-        raise ValueError(f"vector_format musi być jednym z {allowed_formats}, a jest '{vector_format}'.")
 
-    if len(x) != len(y):
-        raise ValueError(f"Liczba serii w x ({len(x)}) musi równać się liczbie serii w y ({len(y)}).")
-
-    fig, ax = plt.subplots(figsize=figsize)
-
-    for i, (xd, yd) in enumerate(zip(x, y), start=1):
-        if not isinstance(xd, Mapping) or not isinstance(yd, Mapping):
-            raise TypeError("Elementy x i y muszą być słownikami.")
-        if "tab" not in xd or "tab" not in yd:
-            raise KeyError("Każdy słownik musi zawierać klucz 'tab' z tablicą wartości.")
-
-        xi = np.asarray(xd["tab"], dtype=float).ravel()
-        yi = np.asarray(yd["tab"], dtype=float).ravel()
-        if xi.shape != yi.shape:
-            raise ValueError(f"Seria {i}: różna liczba punktów: len(x)={xi.size}, len(y)={yi.size}.")
-
-        # etykieta i kolor: preferuj dane z 'y', potem z 'x', potem domyślne
-        label = yd.get("name") or xd.get("name") or f"linia_{i}"
-        color = yd.get("color", xd.get("color", default_color))
-
-        plot_kwargs = dict(
-            linestyle=line_style,
-            linewidth=line_width,
-            marker=(marker if marker else None),
-            markersize=marker_size,
-            alpha=alpha,
-            label=label,
-        )
-        if color is not None:
-            plot_kwargs["color"] = color  # jeśli None, użyj cyklu Matplotlib
-
-        ax.plot(xi, yi, **plot_kwargs)
-
-    ax.set_title(plot_name, fontsize=title_size)
-    ax.set_xlabel(x_name, fontsize=label_size)
-    ax.set_ylabel(y_name, fontsize=label_size)
-    ax.tick_params(labelsize=tick_size)
-
-    if grid:
-        ax.grid(True, linestyle=grid_style, alpha=grid_alpha)
-
-    ax.legend()
-
-    if tight_layout:
-        fig.tight_layout()
-
-    if save:
-        # Ustal katalog docelowy
-        out_dir = Path.cwd() if save_path is None else Path(save_path).expanduser().resolve()
-        if out_dir.exists() and not out_dir.is_dir():
-            raise ValueError(f"save_path '{out_dir}' wskazuje na plik, a nie katalog.")
-        out_dir.mkdir(parents=True, exist_ok=True)
-
-        filename = out_dir / f"{save_name}.{vf}"
-        fig.savefig(
-            filename,
-            format=vf,
-            bbox_inches="tight",
-            transparent=transparent,
-        )
-
-    return fig, ax
-
-def line_to_dict(line):
-    res_dict = {}
-
-    line_list = line.strip().split(" | ")
-    epoch = int(line_list[0].split(" ")[1][:-1])
-    train_loss = float(line_list[0].split(" ")[2].split("=")[1])
-    line_list.pop(0)
-    res_dict["epoch"] = epoch
-    res_dict["train_loss"] = train_loss
-
-    for element in line_list:
-        element = element.strip()
-        elements = element.split("=")
-        value = elements[1]
-        value = change_type_from_file_string(value)
-        res_dict[elements[0]] = value
-
-    return res_dict
-
-
-
-def get_values_from_wynik_file(wynik_file="przyklad_wynik.txt", start_data_line_index=2):
-    with open(wynik_file, "r") as f:
-        wynik = f.read().strip().split("\n")
-
-    start_data = wynik[start_data_line_index].strip().split(" | ")
-    start_data_dict = {}
-    for element in start_data:
-        elements = element.split("=")
-        start_data_dict[elements[0]] = change_type_from_file_string(elements[1])
-
-    best_epoch = int(wynik[-1].strip().split(" ")[-1])
-
-    best_line = wynik[best_epoch + start_data_line_index]
-    best_line_dict = line_to_dict(best_line)
-    return start_data_dict, best_line_dict
-
-def add_file_to_plot_tabs(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab, wynik_file="przyklad_wynik.txt", start_data_line_index=2):
-    start_data_dict, best_line_dict = get_values_from_wynik_file(wynik_file, start_data_line_index)
-    hidden_size_tab.append(start_data_dict["hidden"])
-    train_loss_tab.append(best_line_dict["train_loss"])
-    val_loss_tab.append(best_line_dict["val_loss"])
-    val_acc_tab.append(best_line_dict["val_acc"])
-
-
-def create_plot_from_directory(directory_path, save_path=None, algo_name=None,  start_data_line_index=2):
     if algo_name is None:
         algo_name = directory_path.split("/")[-2]
+    if save_path is None:
+        save_path = directory_path
     train_loss_tab = []
     val_loss_tab = []
     val_acc_tab = []
     hidden_size_tab = []
     files = get_all_files_paths_from_directory(directory_path, ignorowane_rozszerzenia=["pdf"], ignore_file_names=["wynik_koncowy.txt"])
-    start_data_dict, best_line_dict = get_values_from_wynik_file(files[0], start_data_line_index)
+    start_data_dict, best_line_dict = get_values_from_wynik_file_double_descent(files[0], start_data_line_index)
     data_set = start_data_dict["dataset"]
-    files.sort(key=lambda x: get_values_from_wynik_file(x, start_data_line_index)[0]["hidden"])
+    files.sort(key=lambda x: get_values_from_wynik_file_double_descent(x, start_data_line_index)[0]["hidden"])
     for path in files:
-        add_file_to_plot_tabs(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab, path, start_data_line_index)
+        add_file_to_plot_tabs_double_descent(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab, path, start_data_line_index)
 
     x = [
         {"tab": hidden_size_tab, "name": "hidden size"},
@@ -348,7 +396,7 @@ def create_plot_from_directory(directory_path, save_path=None, algo_name=None,  
         {"tab": train_loss_tab, "name": "train loss"},
         {"tab": val_loss_tab, "name": "validation loss"},
     ]
-    additional_data = make_stats_text(
+    additional_data = make_stats_text_for_double_descent_tables(
     hidden_size_tab, train_loss_tab, val_loss_tab, val_acc_tab,
     title=f"Wpływ rozmiaru warstwy ukrytej na metryki modelu {algo_name} na zbiorze {data_set}"
     )
@@ -369,12 +417,10 @@ def create_plot_from_directory(directory_path, save_path=None, algo_name=None,  
 
     return fig, ax, additional_data
 
-def stworz_wszystkie_wykresy(
-    wykresy_path: str | Path = "/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy",
-    *,
-    verbose: bool = True,
-) -> Dict[str, List[str] | List[Tuple[str, str]]]:
+def stworz_wszystkie_wykresy_double_descent(wykresy_path = "/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy", verbose = True):
     """
+    Tworzy wszystkie wykresy dla double_descent z katalogu wyniki_eksperymentow/wykresy
+
     Uruchamia create_plot_from_directory dla wszystkich katalogów pod wykresy_path,
     które zawierają *jakiekolwiek pliki*. Puste katalogi są ignorowane.
 
@@ -419,7 +465,7 @@ def stworz_wszystkie_wykresy(
 
         # To katalog „z wykresem”: odpalamy generator
         try:
-            create_plot_from_directory(str(d), save_path=str(d))
+            create_plot_from_directory_double_descent(str(d))
             processed.append(str(d))
             if verbose:
                 print(f"[OK] {d}")
@@ -435,57 +481,100 @@ def stworz_wszystkie_wykresy(
     }
 
 
-def create_plot_from_directory_kompresja(directory_path, save_path=None, algo_name=None,  start_data_line_index=2):
-    if algo_name is None:
-        algo_name = directory_path.split("/")[-2]
-    train_loss_tab = []
-    val_loss_tab = []
-    val_acc_tab = []
-    hidden_size_tab = []
-    files = get_all_files_paths_from_directory(directory_path, ignorowane_rozszerzenia=["pdf"], ignore_file_names=["wynik_koncowy.txt"])
-    start_data_dict, best_line_dict = get_values_from_wynik_file(files[0], start_data_line_index)
-    data_set = start_data_dict["dataset"]
-    files.sort(key=lambda x: get_values_from_wynik_file(x, start_data_line_index)[0]["hidden"])
-    for path in files:
-        add_file_to_plot_tabs(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab, path, start_data_line_index)
+# =============== PRZETWARZANIE PLIKOW WYNIKOWYCH KOMPRESJA =========================
+def get_wyniki_kompresja(file_path):
+    """
+    Odczttywanie plików wynikowych po kompresji
+    @param file_path - sciezka do pliku po kompresji z ktorego mamy odczytac wartosci
 
+    zwraca tablice lini zmienionych na slownik
+    tab = [dict1, dict2, ...]
+    dict2 = {'i': 1, 'operation_name': 'PRUN', 'fc1': {'w': {'aktualna': 3763200, 'orginalna_wielkosc': 3920000, 'aktualna_w_proc': 96.0}, 'b': {'aktualna': 5000, 'orginalna_wielkosc': 5000, 'aktualna_w_proc': 100.0}}, 'fc2': {'w': {'aktualna': 48000, 'orginalna_wielkosc': 50000, 'aktualna_w_proc': 96.0}, 'b': {'aktualna': 10, 'orginalna_wielkosc': 10, 'aktualna_w_proc': 100.0}}, 'val_loss': 0.15514711806178094, 'val_acc': 0.9562}
+    """
+
+    with open(file_path, "r") as f:
+        plik = f.read().strip().split("\n")
+
+    start_data = plik[0].strip().split(" | ")
+    start_data_dict = {}
+    for element in start_data:
+        elements = element.split("=")
+        start_data_dict[elements[0]] = change_type_from_file_string(elements[1])
+
+    plik.pop(0)
+    wartosci = [el.strip().split("|") for el in plik]
+    wszystkie_pomiary = []
+    for i in range(len(wartosci)):
+        linia = wartosci[i]
+        linia = [el.strip() for el in linia]
+
+        wartosci[i] = linia
+        wartosc_dict = {
+            "i": int(linia[0]),
+            "operation_name": linia[1],
+        }
+
+
+        for i in range(2, len(linia)):
+            parametr = linia[i]
+            parametr_name = parametr.strip().split(" ")[0].strip().strip(":")
+            parametr_val = parametr.strip().split(" ")[1].strip().strip(":")
+            if parametr_name == "val_loss" or parametr_name == "val_acc":
+                val = float(parametr_val)
+                wartosc_dict[parametr_name] = val
+                continue
+            pozostalo_w_procentach = float(parametr.strip().split(" ")[2].strip().strip(":").strip("(").strip(")").strip("%"))
+            nazwa_warstwy = parametr_name.strip().split(".")[0]
+            typ_elementu = parametr_name.strip().split(".")[1] #b bias lub w wagi
+            aktualna_wielkosc = int(parametr_val.split("/")[0])
+            orginalna_wielkosc = int(parametr_val.split("/")[1])
+            wyjsciowy_slownik = {"aktualna": aktualna_wielkosc, "orginalna_wielkosc": orginalna_wielkosc, "aktualna_w_proc": pozostalo_w_procentach}
+            if nazwa_warstwy not in wartosc_dict:
+                wartosc_dict[nazwa_warstwy] = {typ_elementu : wyjsciowy_slownik}
+            else:
+                wartosc_dict[nazwa_warstwy][typ_elementu] = wyjsciowy_slownik
+        wszystkie_pomiary.append(wartosc_dict.copy())
+    return start_data_dict, wszystkie_pomiary
+
+def stworz_wykres_kompresja(file_path, algo_name, save_path, reverse_kompresja=True):
+
+    start_wyniki, wyniki = get_wyniki_kompresja(file_path)
+    rozmiar_procentowy_wag = [wynik["fc1"]["w"]["aktualna_w_proc"] for wynik in wyniki]
+    if reverse_kompresja:
+        rozmiar_procentowy_wag = [100.0 - waga for waga in rozmiar_procentowy_wag]
+    val_acc = [wynik["val_acc"] for wynik in wyniki]
+    print(rozmiar_procentowy_wag)
+    print(val_acc)
     x = [
-        {"tab": hidden_size_tab, "name": "hidden size"},
-        {"tab": hidden_size_tab, "name": "hidden size"},
+        {"tab": rozmiar_procentowy_wag, "name": "Procenotwa wielkosc pozostalych wag"}
     ]
     y = [
-        {"tab": train_loss_tab, "name": "train loss"},
-        {"tab": val_loss_tab, "name": "validation loss"},
+        {"tab": val_acc, "name": "val accuracy"}
     ]
-    additional_data = make_stats_text(
-    hidden_size_tab, train_loss_tab, val_loss_tab, val_acc_tab,
-    title=f"Wpływ rozmiaru warstwy ukrytej na metryki modelu {algo_name} na zbiorze {data_set}"
-    )
-    txt_file_path = Path(save_path) / "wynik_koncowy.txt"
-    with open(txt_file_path, "w") as f:
-        f.write(additional_data)
-
-
+    x_name = "procent kompresji"
+    if reverse_kompresja:
+        x_name = "pozostaly procent modelu"
     fig, ax = create_plot(
         x, y,
-        plot_name=f"Wpływ rozmiaru warstwy ukrytej na metryki modelu {algo_name} na zbiorze {data_set}",
-        x_name="rozmiar warstwy ukrytej",
+        plot_name=f"Wpływ kompresji modelu na metryki modelu {algo_name} na zbiorze {start_wyniki["dataset"]}",
+        x_name= x_name,
         y_name="wartosci metryk",
         vector_format="pdf",
-        save=True, save_name=f"{algo_name}_{data_set}", save_path=save_path,
+        save=True, save_name=f"{algo_name}_{start_wyniki["dataset"]}", save_path=save_path,
         marker="o"
     )
+    return fig, ax
 
-    return fig, ax, additional_data
 #create_plot_from_directory("/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy/mlp/mnist/wykres1_pierwsza_pr", save_path="/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy/mlp/mnist/wykres1_pierwsza_pr")
 
 
-# wynik = stworz_wszystkie_wykresy(verbose=False)
+# wynik = stworz_wszystkie_wykresy_double_descent(verbose=False)
 # print(wynik["processed"])
 # print("-"*100)
 # print("ERRORS")
 # print("-"*100)
 # print(wynik["errors"])
 
-create_plot_from_directory_kompresja("/home/miku/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1", save_path="/home/miku/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1")
+stworz_wykres_kompresja("/home/mikolaj/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1/kompresja.txt", "mlp", "/home/mikolaj/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1")
+#get_wyniki_kompresja("/home/mikolaj/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1/kompresja.txt")
 

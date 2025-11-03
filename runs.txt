@@ -1,6 +1,0 @@
-python train_mlp.py --hidden 200 --dataset emnist_balanced --log_file wyniki_hidden_200_emnist_balanced
-python train_mlp.py --hidden 400 --dataset emnist_balanced --log_file wyniki_hidden_400_emnist_balanced
-python train_mlp.py --hidden 750 --dataset emnist_balanced --log_file wyniki_hidden_750_emnist_balanced
-python train_mlp.py --hidden 1000 --dataset emnist_balanced --log_file wyniki_hidden_1000_emnist_balanced
-python train_mlp.py --hidden 1500 --dataset emnist_balanced --log_file wyniki_hidden_1500_emnist_balanced
-

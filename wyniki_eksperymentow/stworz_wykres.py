@@ -97,6 +97,9 @@ def create_plot(
     tight_layout: bool = True,
     # --- ścieżka zapisu ---
     save_path: str | Path | None = None,  # katalog do zapisu (absolutny lub względny)
+    odwrocona_os_x: bool = False,
+    max_na_osi_x: float = None,
+    min_na_osi_x: float = None,
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Rysuje wiele linii (x vs y) na jednym wykresie. x i y to listy słowników:
@@ -119,6 +122,7 @@ def create_plot(
         raise ValueError(f"Liczba serii w x ({len(x)}) musi równać się liczbie serii w y ({len(y)}).")
 
     fig, ax = plt.subplots(figsize=figsize)
+    min_x, max_x = float("inf"), float("-inf")
 
     for i, (xd, yd) in enumerate(zip(x, y), start=1):
         if not isinstance(xd, Mapping) or not isinstance(yd, Mapping):
@@ -128,6 +132,10 @@ def create_plot(
 
         xi = np.asarray(xd["tab"], dtype=float).ravel()
         yi = np.asarray(yd["tab"], dtype=float).ravel()
+
+        min_x = min(min_x, float(np.min(xi)))
+        max_x = max(max_x, float(np.max(xi)))
+
         if xi.shape != yi.shape:
             raise ValueError(f"Seria {i}: różna liczba punktów: len(x)={xi.size}, len(y)={yi.size}.")
 
@@ -157,6 +165,13 @@ def create_plot(
         ax.grid(True, linestyle=grid_style, alpha=grid_alpha)
 
     ax.legend()
+    if odwrocona_os_x and np.isfinite(min_x) and np.isfinite(max_x):
+        if max_na_osi_x is not None and min_na_osi_x is not None:
+            ax.set_xlim(max_na_osi_x, min_na_osi_x)  # 100 po lewej, 0 po prawej
+        else:
+            ax.set_xlim(max_x, min_x)  # 100 po lewej, 0 po prawej
+    elif max_na_osi_x is not None and min_na_osi_x is not None:
+        ax.set_xlim(min_na_osi_x, max_na_osi_x)
 
     if tight_layout:
         fig.tight_layout()
@@ -536,7 +551,7 @@ def get_wyniki_kompresja(file_path):
         wszystkie_pomiary.append(wartosc_dict.copy())
     return start_data_dict, wszystkie_pomiary
 
-def stworz_wykres_kompresja(file_path, algo_name, save_path, reverse_kompresja=True):
+def stworz_wykres_kompresja(file_path, algo_name, save_path, reverse_kompresja=False):
 
     start_wyniki, wyniki = get_wyniki_kompresja(file_path)
     rozmiar_procentowy_wag = [wynik["fc1"]["w"]["aktualna_w_proc"] for wynik in wyniki]
@@ -561,8 +576,12 @@ def stworz_wykres_kompresja(file_path, algo_name, save_path, reverse_kompresja=T
         y_name="wartosci metryk",
         vector_format="pdf",
         save=True, save_name=f"{algo_name}_{start_wyniki["dataset"]}", save_path=save_path,
-        marker="o"
+        marker="o",
+        odwrocona_os_x=True,
+        max_na_osi_x=100.0,
+        min_na_osi_x=0.0
     )
+    print(f"stworzono wykres na pathie:{save_path}")
     return fig, ax
 
 #create_plot_from_directory("/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy/mlp/mnist/wykres1_pierwsza_pr", save_path="/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy/mlp/mnist/wykres1_pierwsza_pr")
@@ -575,6 +594,15 @@ def stworz_wykres_kompresja(file_path, algo_name, save_path, reverse_kompresja=T
 # print("-"*100)
 # print(wynik["errors"])
 
-stworz_wykres_kompresja("/home/mikolaj/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1/kompresja.txt", "mlp", "/home/mikolaj/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1")
+#stworz_wykres_kompresja("/home/miku/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1/kompresja.txt", "mlp", "/home/miku/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1")
 #get_wyniki_kompresja("/home/mikolaj/PycharmProjects/Pracainzynierska/kompresja_iteracyjna_wyniki_1/kompresja.txt")
+
+if __name__ == "__main__":
+    while True:
+        wszystkie_wykresy = input("Czy chcesz stworzyc wszystkie wykresy? (tak/nie): ")
+        if wszystkie_wykresy.strip() == "tak":
+            stworz_wszystkie_wykresy_double_descent(verbose=False)
+        elif wszystkie_wykresy.strip() != "nie":
+            print("wpisz tak lub nie")
+            continue
 

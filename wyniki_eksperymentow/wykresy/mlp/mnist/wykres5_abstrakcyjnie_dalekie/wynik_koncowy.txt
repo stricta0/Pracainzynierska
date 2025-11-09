@@ -1,5 +1,5 @@
-Wpływ rozmiaru warstwy ukrytej na metryki modelu mnist na zbiorze mnist
------------------------------------------------------------------------
+Wpływ rozmiaru warstwy ukrytej na metryki modelu mlp na zbiorze mnist
+---------------------------------------------------------------------
 Tabela (oryginalna kolejność):
 hidden | train_loss | val_loss | val_acc | val_acc_%
 ----------------------------------------------------

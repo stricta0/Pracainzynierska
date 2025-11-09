@@ -62,6 +62,7 @@ if __name__ == "__main__":
 
     # — Kompresja —
     parser.add_argument("--compress", action="store_true", help="wykonaj kompresję iteracyjną")
+    parser.add_argument("--use_cache", action="store_true", help="wykorzystaj cashowanie na gpu")
     parser.add_argument("--C", default=90.0, type=float, help="docelowy łączny stopień kompresji w % (np. 90)")
     parser.add_argument("--step", default=10.0, type=float, help="rozmiar pojedynczego kroku w % z pozostałych (np. 10)")
     parser.add_argument("--log_dir", default="kompresja_mlp", type=str)
@@ -79,6 +80,7 @@ if __name__ == "__main__":
         log_file=args.log_file,
         cpu=True if args.cpu else None,
         model_name=args.model_name,
+        use_cache=True if args.use_cache else False,
     )
 
     model = MLP_Whole(cfg, hidden=args.hidden)

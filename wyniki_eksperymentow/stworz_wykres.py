@@ -22,7 +22,13 @@ def change_type_from_file_string(value):
     if value[-1] == "%":
         value = float(value[:-1]) / 100.0
     elif "." in value:
-        value = float(value)
+        all_numeryczne = "0123456789."
+        if_float = True
+        for znak in value:
+            if znak not in all_numeryczne:
+                if_float = False
+        if if_float:
+            value = float(value)
     elif value == "False":
         value = False
     elif value == "True":
@@ -232,7 +238,6 @@ def get_values_from_wynik_file_double_descent(wynik_file="przyklad_wynik.txt", s
     slownik_argumentow_poczatkowych - to slownik z informacjami o trenowanym modelu (ilosc wag, epok itd)
     slownik_wynikow_najlepszej_epoki - slownik wynikow metryk dla najlpszej epoki modelu
     """
-
     with open(wynik_file, "r") as f:
         wynik = f.read().strip().split("\n")
 
@@ -241,14 +246,13 @@ def get_values_from_wynik_file_double_descent(wynik_file="przyklad_wynik.txt", s
     for element in start_data:
         elements = element.split("=")
         start_data_dict[elements[0]] = change_type_from_file_string(elements[1])
-
     best_epoch = int(wynik[-1].strip().split(" ")[-1])
 
     best_line = wynik[best_epoch + start_data_line_index]
     best_line_dict = line_to_dict_double_descent_plik(best_line)
     return start_data_dict, best_line_dict
 
-def add_file_to_plot_tabs_double_descent(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab, wynik_file="przyklad_wynik.txt", start_data_line_index=2):
+def add_file_to_plot_tabs_double_descent(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab,sorting_key, wynik_file="przyklad_wynik.txt", start_data_line_index=2):
     """
     Dodaje dane z pliku tekstowego na temat pojedynczego eksperymtu double descent i
     dodaje je do wspolnych tablic - tabice sa inplace (faktycznie dodaje)
@@ -261,8 +265,9 @@ def add_file_to_plot_tabs_double_descent(train_loss_tab, val_loss_tab, val_acc_t
 
     returns NONE (dziala in place)
     """
+
     start_data_dict, best_line_dict = get_values_from_wynik_file_double_descent(wynik_file, start_data_line_index)
-    hidden_size_tab.append(start_data_dict["hidden"])
+    hidden_size_tab.append(start_data_dict[sorting_key])
     train_loss_tab.append(best_line_dict["train_loss"])
     val_loss_tab.append(best_line_dict["val_loss"])
     val_acc_tab.append(best_line_dict["val_acc"])
@@ -387,9 +392,8 @@ def create_plot_from_directory_double_descent(directory_path, save_path=None, al
     fig, ax - wykres w formie mathplotliba
     additional_data - tresc dodatkowego pliku .txt z informacjami
     """
-
     if algo_name is None:
-        algo_name = directory_path.split("/")[-2]
+        algo_name = directory_path.split("/")[-3]
     if save_path is None:
         save_path = directory_path
     train_loss_tab = []
@@ -399,10 +403,11 @@ def create_plot_from_directory_double_descent(directory_path, save_path=None, al
     files = get_all_files_paths_from_directory(directory_path, ignorowane_rozszerzenia=["pdf"], ignore_file_names=["wynik_koncowy.txt"])
     start_data_dict, best_line_dict = get_values_from_wynik_file_double_descent(files[0], start_data_line_index)
     data_set = start_data_dict["dataset"]
-    files.sort(key=lambda x: get_values_from_wynik_file_double_descent(x, start_data_line_index)[0]["hidden"])
+    names_map = {"mlp" : "hidden", "rrf" : "n_features", "cnn": "ch1"}
+    sorting_key = names_map.get(algo_name.lower())
+    files.sort(key=lambda x: get_values_from_wynik_file_double_descent(x, start_data_line_index)[0][sorting_key])
     for path in files:
-        add_file_to_plot_tabs_double_descent(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab, path, start_data_line_index)
-
+        add_file_to_plot_tabs_double_descent(train_loss_tab, val_loss_tab, val_acc_tab, hidden_size_tab, sorting_key, path, start_data_line_index)
     x = [
         {"tab": hidden_size_tab, "name": "hidden size"},
         {"tab": hidden_size_tab, "name": "hidden size"},
@@ -419,7 +424,6 @@ def create_plot_from_directory_double_descent(directory_path, save_path=None, al
     with open(txt_file_path, "w") as f:
         f.write(additional_data)
 
-
     fig, ax = create_plot(
         x, y,
         plot_name=f"Wpływ rozmiaru warstwy ukrytej na metryki modelu {algo_name} na zbiorze {data_set}",
@@ -429,7 +433,6 @@ def create_plot_from_directory_double_descent(directory_path, save_path=None, al
         save=True, save_name=f"{algo_name}_{data_set}", save_path=save_path,
         marker="o"
     )
-
     return fig, ax, additional_data
 
 def stworz_wszystkie_wykresy_double_descent(wykresy_path = "/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy", verbose = True):
@@ -601,7 +604,7 @@ if __name__ == "__main__":
     while True:
         wszystkie_wykresy = input("Czy chcesz stworzyc wszystkie wykresy? (tak/nie): ")
         if wszystkie_wykresy.strip() == "tak":
-            stworz_wszystkie_wykresy_double_descent(verbose=False)
+            stworz_wszystkie_wykresy_double_descent(verbose=True)
         elif wszystkie_wykresy.strip() != "nie":
             print("wpisz tak lub nie")
             continue

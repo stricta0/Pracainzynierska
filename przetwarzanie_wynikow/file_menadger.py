@@ -58,17 +58,16 @@ class FileMenadger:
         return file_paths
 
     @staticmethod
-    def _get_sort_lista_plikow(lista_plikow):
-        def get_size(plik):
-            names_for_size_in_model_map = {"mlp": "hidden", "rff": "n_features", "cnn": "ch1"}
+    def _get_sort_lista_plikow(lista_plikow, names_for_size_in_model_map):
+        def get_size(plik, names_for_size_in_model_map):
             start_info, _, _, _ = TextFileReader.odczytaj_treningowy_plik(plik)
             model_name = start_info["model_name"].lower()
             return int(start_info[names_for_size_in_model_map[model_name]])
-        return sorted(lista_plikow, key=get_size, reverse=True)
+        return sorted(lista_plikow, key=lambda x : get_size(x, names_for_size_in_model_map), reverse=True)
 
     @staticmethod
-    def get_fille_list(folder_path, ignore_file_names, ignorowane_rozszerzenia, ignorowane_foldery):
+    def get_fille_list(folder_path, ignore_file_names, ignorowane_rozszerzenia, ignorowane_foldery, names_for_size_in_model_map):
         lista_plikow = FileMenadger._get_all_files_paths_from_directory(folder_path, ignorowane_rozszerzenia=ignorowane_rozszerzenia,
                                                           ignore_file_names=ignore_file_names, ignorowane_foldery=ignorowane_foldery)
-        return FileMenadger._get_sort_lista_plikow(lista_plikow)
+        return FileMenadger._get_sort_lista_plikow(lista_plikow, names_for_size_in_model_map)
 

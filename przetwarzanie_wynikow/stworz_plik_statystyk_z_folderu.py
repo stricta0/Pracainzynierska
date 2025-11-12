@@ -2,8 +2,9 @@ from odczytywanie_plikow_tekstowych import TextFileReader
 
 class CreateStatisticsFile:
 
-    def __init__(self, files_list):
+    def __init__(self, files_list, names_for_size_in_model_map):
         self.files_list = files_list
+        self.names_for_size_in_model_map = names_for_size_in_model_map
 
     def get_data_for_file(self):
         best_val_acc_file = "model_size | train_loss | val_loss | val_acc\n"
@@ -73,7 +74,7 @@ class CreateStatisticsFile:
         return best_val_acc_file
 
     def _get_size(self, plik):
-        names_for_size_in_model_map = {"mlp": "hidden", "rff": "n_features", "cnn": "ch1"}
+        #names_for_size_in_model_map = {"mlp": "hidden", "mlp2": "hidden", "rff": "n_features", "cnn": "ch1"}
         start_info, _, _, _ = TextFileReader.odczytaj_treningowy_plik(plik)
         model_name = start_info["model_name"].lower()
-        return int(start_info[names_for_size_in_model_map[model_name]])
+        return int(start_info[self.names_for_size_in_model_map[model_name]])

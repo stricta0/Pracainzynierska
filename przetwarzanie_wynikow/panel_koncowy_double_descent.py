@@ -20,7 +20,8 @@ class PanelKoncowyDoubleDescent:
         self.ignore_file_names = self.config["double_descent"]["ignorowane"]["pliki"]
         self.ignorowane_rozszerzenia = self.config["double_descent"]["ignorowane"]["rozszerzenia"]
         self.ignorowane_foldery = list(set(self.config["double_descent"]["ignorowane"]["ignorowane_foldery"] + [self.nazwa_folderu_z_wykresami, self.nazwa_folderu_z_wynikami_analizy_txt]))
-        self.lista_plikow = FileMenadger.get_fille_list(folder_path, self.ignore_file_names, self.ignorowane_rozszerzenia, self.ignorowane_foldery)
+        self.names_for_size_in_model_map = self.config["double_descent"]["names_for_size_in_model_map"]
+        self.lista_plikow = FileMenadger.get_fille_list(folder_path, self.ignore_file_names, self.ignorowane_rozszerzenia, self.ignorowane_foldery, self.names_for_size_in_model_map)
 
     def stworz_wykresy_z_danych_folderu_double_descent_best_models(self, save_path=None, lista_plikow=None, yscale="linear", xscale="linear"):
         if lista_plikow is None:
@@ -84,7 +85,7 @@ class PanelKoncowyDoubleDescent:
         if save_path is None:
             save_path = self.folder_path
 
-        create_statistic_file_obj = CreateStatisticsFile(lista_plikow)
+        create_statistic_file_obj = CreateStatisticsFile(lista_plikow, self.names_for_size_in_model_map)
 
         best_val_acc_file, best_val_loss_file = create_statistic_file_obj.get_data_from_files()
         text_file_zwykla_kolejnosc_acc = create_statistic_file_obj.create_string_from_dict(best_val_acc_file)

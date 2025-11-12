@@ -2,7 +2,12 @@
   "double_descent": {
     "nazwa_folderu_z_wykresami": "wykresy",
     "nazwa_folderu_z_wynikami_w_plikach_txt": "wyniki_analizy",
-
+    "names_for_size_in_model_map": {
+      "mlp": "hidden",
+      "mlp2": "hidden",
+      "rff": "n_features",
+      "cnn": "ch1"
+    },
     "ignorowane": {
       "pliki": ["wynik_koncowy.txt"],
       "rozszerzenia": ["pdf"],

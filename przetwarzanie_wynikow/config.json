@@ -1,0 +1,12 @@
+{
+  "double_descent": {
+    "nazwa_folderu_z_wykresami": "wykresy",
+    "nazwa_folderu_z_wynikami_w_plikach_txt": "wyniki_analizy",
+
+    "ignorowane": {
+      "pliki": ["wynik_koncowy.txt"],
+      "rozszerzenia": ["pdf"],
+      "ignorowane_foldery": ["wykresy", "wyniki_analizy"]
+    }
+  }
+}

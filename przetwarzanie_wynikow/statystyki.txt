@@ -1,0 +1,1 @@
+model_size | train_loss | val_loss | val_acc

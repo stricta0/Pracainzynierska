@@ -1,6 +1,6 @@
 Using device: cuda, type: cuda
 Model: MLP(hidden=10000, num_classes=10)
-dataset=mnist | hidden=10000 | batch_size=128 | epochs=10000 | patience=1000 | lr=0.001 | seed=42 | momentum=0.95 | log_file=wyniki_hidden_10000_mnist | cpu=False
+dataset=mnist | hidden=10000 | batch_size=128 | epochs=10000 | patience=1000 | lr=0.001 | seed=42 | momentum=0.95 | log_file=wyniki_hidden_10000_mnist | cpu=False | model_name=MLP
 [Epoch 01] train_loss=0.494439 | train_acc=86.118333% | train_correct=51671 | train_total=60000 | val_loss=0.3097467 | val_acc=91.3700000% | interpolacja=False | soft_intepolacja=False
 [Epoch 02] train_loss=0.293849 | train_acc=91.645000% | train_correct=54987 | train_total=60000 | val_loss=0.2628388 | val_acc=92.5700000% | interpolacja=False | soft_intepolacja=False
 [Epoch 03] train_loss=0.258026 | train_acc=92.680000% | train_correct=55608 | train_total=60000 | val_loss=0.2385560 | val_acc=93.1800000% | interpolacja=False | soft_intepolacja=False

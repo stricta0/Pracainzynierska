@@ -7,8 +7,8 @@ class TextFileReader:
             plik = f.read().strip().split("\n")
             start_info = TextFileReader._read_start_data_plik_double_descent(plik)
             wartosci_na_epokach = TextFileReader._stworz_slownik_wynikow_double_descent(plik)
-            max_val_acc_epoka_nr, min_train_loss_epoka_nr = TextFileReader._find_best_vall_acc_and_vall_loss_epochs(wartosci_na_epokach)
-        return start_info, wartosci_na_epokach, max_val_acc_epoka_nr, min_train_loss_epoka_nr
+            max_val_acc_epoka_nr, min_vall_loss_epoka_nr = TextFileReader._find_best_vall_acc_and_vall_loss_epochs(wartosci_na_epokach)
+        return start_info, wartosci_na_epokach, max_val_acc_epoka_nr, min_vall_loss_epoka_nr
 
     @staticmethod
     def _stworz_slownik_wynikow_double_descent(file, start_data_line_index=3):

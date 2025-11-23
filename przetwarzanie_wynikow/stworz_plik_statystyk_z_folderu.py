@@ -6,16 +6,16 @@ class CreateStatisticsFile:
         self.files_list = files_list
         self.names_for_size_in_model_map = names_for_size_in_model_map
 
-    def get_data_for_file(self):
-        best_val_acc_file = "model_size | train_loss | val_loss | val_acc\n"
-        best_val_loss_file = "model_size | train_loss | val_loss | val_acc\n"
-
-        for file in self.files_list:
-            start_info, wartosci_na_epokach, max_val_acc_epoka_nr, min_train_loss_epoka_nr = TextFileReader.odczytaj_treningowy_plik(file)
-            best_val_acc_file += f"{self._get_size(file)} | {wartosci_na_epokach[max_val_acc_epoka_nr]["train_loss"]} | {wartosci_na_epokach[max_val_acc_epoka_nr]["val_loss"]} | {wartosci_na_epokach[max_val_acc_epoka_nr]["val_acc"]}\n"
-            best_val_loss_file += f"{self._get_size(file)} | {wartosci_na_epokach[min_train_loss_epoka_nr]["train_loss"]} | {wartosci_na_epokach[min_train_loss_epoka_nr]["val_loss"]} | {wartosci_na_epokach[min_train_loss_epoka_nr]["val_acc"]}\n"
-
-        return best_val_acc_file, best_val_loss_file
+    # def get_data_for_file(self):
+    #     best_val_acc_file = "model_size | train_loss | val_loss | val_acc\n"
+    #     best_val_loss_file = "model_size | train_loss | val_loss | val_acc\n"
+    #
+    #     for file in self.files_list:
+    #         start_info, wartosci_na_epokach, max_val_acc_epoka_nr, min_train_loss_epoka_nr = TextFileReader.odczytaj_treningowy_plik(file)
+    #         best_val_acc_file += f"{self._get_size(file)} | {wartosci_na_epokach[max_val_acc_epoka_nr]["train_loss"]} | {wartosci_na_epokach[max_val_acc_epoka_nr]["val_loss"]} | {wartosci_na_epokach[max_val_acc_epoka_nr]["val_acc"]}\n"
+    #         best_val_loss_file += f"{self._get_size(file)} | {wartosci_na_epokach[min_train_loss_epoka_nr]["train_loss"]} | {wartosci_na_epokach[min_train_loss_epoka_nr]["val_loss"]} | {wartosci_na_epokach[min_train_loss_epoka_nr]["val_acc"]}\n"
+    #
+    #     return best_val_acc_file, best_val_loss_file
 
     def get_data_from_files(self):
         best_val_acc_file = {"model_size" : [], "train_loss": [], "val_loss": [], "val_acc": [], "epoch": []}

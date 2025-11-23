@@ -291,11 +291,6 @@ class MyModel:
 
             val_loss, val_acc = self.evaluate()
 
-            # formaty jak w "przed":
-            # train_loss → 6 miejsc po przecinku
-            # train_acc  → 6 miejsc po przecinku + %
-            # val_loss   → 7 miejsc
-            # val_acc    → 7 miejsc + %
             is_interpolation = (correct == total) and (train_loss < 1e-6)
             self.loger.add_line_to_file(
                 f"[Epoch {epoch:02d}] "
@@ -311,15 +306,15 @@ class MyModel:
                 best_val_acc = val_acc
                 best_epoch = epoch
                 improved = True
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                improved = True
                 best_state_dict = {k: v.detach().clone() for k, v in self.model.state_dict().items()}
                 if save_ckpt:
                     torch.save({
                         "model_state": self.model.state_dict(),
                         "num_classes": self.num_classes,
                     }, ckpt_name)
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                improved = True
             if train_acc > best_train_acc:
                 best_train_acc = train_acc
                 improved = True

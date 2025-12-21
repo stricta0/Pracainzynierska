@@ -15,7 +15,7 @@ import torch.nn.functional as F
 import torch.nn.utils.prune as prune
 
 from txt_loger import Loger
-from download_datasets import Datasets_Menadger
+from download_datasets import DatasetsManager
 
 
 @dataclass
@@ -47,7 +47,7 @@ class MyModel:
     def __init__(self, cfg: TrainConfig):
         self.cfg = cfg
         self.loger = Loger(file_name=cfg.log_file)
-        self.datasets_menadger = Datasets_Menadger()
+        self.datasets_menadger = DatasetsManager()
         self.theta0: Dict[str, torch.Tensor] = {}
         self.prune_bias: bool = False  # czy ciąć biasy przy kompresji (domyślnie nie)
 

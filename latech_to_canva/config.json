@@ -1,0 +1,4 @@
+{
+  "file_name": "suma_h",
+  "latex_math_text": "\\[\nh_c(x)\n=\n\\sum_{k=1}^{N} a_{k} \\, \\cos\\!\\big(\\langle v_k, x \\rangle\\big)\n\\;+\\;\n\\sum_{k=1}^{N} a_{(k+N)} \\, \\sin\\!\\big(\\langle v_k, x \\rangle\\big).\n\\]"
+}

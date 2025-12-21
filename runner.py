@@ -160,12 +160,12 @@ def main():
     ap.add_argument("--retry", type=int, default=0, help="Ile razy ponowić nieudane zadanie.")
     ap.add_argument("--logs_dir", type=Path, default=Path("logs"), help="Katalog na logi.")
     args = ap.parse_args()
-
+    print("START")
     jobs_path: Path = args.jobs
     if not jobs_path.exists():
         print(f"[ERR] Brak pliku: {jobs_path}"); return
     lock_path: Path = jobs_path.with_suffix(jobs_path.suffix + ".lock")
-
+    print("hello")
     with FileLock(lock_path):
         lines = read_lines(jobs_path)
     idxs = pending_indices(lines)
@@ -175,7 +175,7 @@ def main():
 
     if not idxs:
         print("[INFO] Nic do zrobienia (wszystko DONE albo FAIL)."); return
-
+    print("hi2")
     ok = fail = 0
     with ThreadPoolExecutor(max_workers=max(1, int(args.workers))) as ex:
         futs = [ex.submit(run_one, i, jobs_path, lock_path, args.logs_dir, int(args.retry)) for i in idxs]

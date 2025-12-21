@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 
-class Datasets_Menadger:
+class DatasetsManager:
     def __init__(self, dataset_path="/home/miku/PycharmProjects/Pracainzynierska/data"):
         self.dataset_path = dataset_path
 
@@ -106,6 +106,6 @@ class Datasets_Menadger:
 
 
 if __name__ == "__main__":
-    data_downolader = Datasets_Menadger()
+    data_downolader = DatasetsManager()
     #data_downolader.download_all()
     print("trzeba wywolac download_all jak chcesz wszystko pobrac")

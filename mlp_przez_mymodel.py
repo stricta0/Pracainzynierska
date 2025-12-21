@@ -82,7 +82,7 @@ if __name__ == "__main__":
         model_name=args.model_name,
         use_cache=True if args.use_cache else False,
     )
-
+    print("inicjalizacja modelu")
     model = MLP_Whole(cfg, hidden=args.hidden)
 
     # Przykład 1: sam trening (logi w args.log_file)
@@ -91,6 +91,7 @@ if __name__ == "__main__":
     # Przykład 2: (opcjonalnie) kompresja iteracyjna z logami do katalogu
     if args.compress:
         # katalog na logi kompresji
+        print(f"Rozpoczynam kompresje do katalogu {args.log_dir}")
         steps, alive_after = model.kompresja_iteracyjna(
             calkowity_stopien_kompresji=args.C,
             rozmiar_kroku=args.step,

@@ -1,0 +1,34 @@
+Using device: cuda, type: cuda
+Model: MLP(hidden=300, num_classes=10)
+dataset=mnist | hidden=300 | batch_size=256 | epochs=30 | patience=500 | lr=0.001 | seed=42 | momentum=0.9 | log_file=test_mlp.txt | cpu=None | model_name=MLP | use_cache=False
+[Epoch 01] train_loss=1.275766 | train_acc=87.435000% | train_correct=52461 | train_total=60000 | val_loss=0.8533040 | val_acc=89.2100000% | interpolacja=False | soft_intepolacja=False
+[Epoch 02] train_loss=0.680917 | train_acc=89.856667% | train_correct=53914 | train_total=60000 | val_loss=0.5355643 | val_acc=90.8300000% | interpolacja=False | soft_intepolacja=False
+[Epoch 03] train_loss=0.485698 | train_acc=90.570000% | train_correct=54342 | train_total=60000 | val_loss=0.4227625 | val_acc=91.1300000% | interpolacja=False | soft_intepolacja=False
+[Epoch 04] train_loss=0.406920 | train_acc=90.860000% | train_correct=54516 | train_total=60000 | val_loss=0.3702996 | val_acc=91.3700000% | interpolacja=False | soft_intepolacja=False
+[Epoch 05] train_loss=0.366288 | train_acc=91.113333% | train_correct=54668 | train_total=60000 | val_loss=0.3408814 | val_acc=91.4900000% | interpolacja=False | soft_intepolacja=False
+[Epoch 06] train_loss=0.341481 | train_acc=91.276667% | train_correct=54766 | train_total=60000 | val_loss=0.3214502 | val_acc=91.7100000% | interpolacja=False | soft_intepolacja=False
+[Epoch 07] train_loss=0.324484 | train_acc=91.426667% | train_correct=54856 | train_total=60000 | val_loss=0.3077383 | val_acc=91.8700000% | interpolacja=False | soft_intepolacja=False
+[Epoch 08] train_loss=0.311913 | train_acc=91.611667% | train_correct=54967 | train_total=60000 | val_loss=0.2978855 | val_acc=91.8800000% | interpolacja=False | soft_intepolacja=False
+[Epoch 09] train_loss=0.302112 | train_acc=91.748333% | train_correct=55049 | train_total=60000 | val_loss=0.2891698 | val_acc=92.0100000% | interpolacja=False | soft_intepolacja=False
+[Epoch 10] train_loss=0.294054 | train_acc=91.855000% | train_correct=55113 | train_total=60000 | val_loss=0.2822439 | val_acc=92.2400000% | interpolacja=False | soft_intepolacja=False
+[Epoch 11] train_loss=0.287219 | train_acc=91.981667% | train_correct=55189 | train_total=60000 | val_loss=0.2768207 | val_acc=92.3300000% | interpolacja=False | soft_intepolacja=False
+[Epoch 12] train_loss=0.281349 | train_acc=92.125000% | train_correct=55275 | train_total=60000 | val_loss=0.2713204 | val_acc=92.3800000% | interpolacja=False | soft_intepolacja=False
+[Epoch 13] train_loss=0.276272 | train_acc=92.203333% | train_correct=55322 | train_total=60000 | val_loss=0.2671539 | val_acc=92.5100000% | interpolacja=False | soft_intepolacja=False
+[Epoch 14] train_loss=0.271476 | train_acc=92.346667% | train_correct=55408 | train_total=60000 | val_loss=0.2631522 | val_acc=92.6400000% | interpolacja=False | soft_intepolacja=False
+[Epoch 15] train_loss=0.267247 | train_acc=92.425000% | train_correct=55455 | train_total=60000 | val_loss=0.2594361 | val_acc=92.7200000% | interpolacja=False | soft_intepolacja=False
+[Epoch 16] train_loss=0.263388 | train_acc=92.546667% | train_correct=55528 | train_total=60000 | val_loss=0.2557739 | val_acc=92.7400000% | interpolacja=False | soft_intepolacja=False
+[Epoch 17] train_loss=0.259760 | train_acc=92.633333% | train_correct=55580 | train_total=60000 | val_loss=0.2524555 | val_acc=92.7700000% | interpolacja=False | soft_intepolacja=False
+[Epoch 18] train_loss=0.256405 | train_acc=92.751667% | train_correct=55651 | train_total=60000 | val_loss=0.2494390 | val_acc=92.9100000% | interpolacja=False | soft_intepolacja=False
+[Epoch 19] train_loss=0.253200 | train_acc=92.790000% | train_correct=55674 | train_total=60000 | val_loss=0.2471215 | val_acc=92.9100000% | interpolacja=False | soft_intepolacja=False
+[Epoch 20] train_loss=0.250263 | train_acc=92.873333% | train_correct=55724 | train_total=60000 | val_loss=0.2443706 | val_acc=93.0200000% | interpolacja=False | soft_intepolacja=False
+[Epoch 21] train_loss=0.247417 | train_acc=92.980000% | train_correct=55788 | train_total=60000 | val_loss=0.2418583 | val_acc=93.1300000% | interpolacja=False | soft_intepolacja=False
+[Epoch 22] train_loss=0.244783 | train_acc=93.028333% | train_correct=55817 | train_total=60000 | val_loss=0.2397037 | val_acc=93.1500000% | interpolacja=False | soft_intepolacja=False
+[Epoch 23] train_loss=0.242181 | train_acc=93.068333% | train_correct=55841 | train_total=60000 | val_loss=0.2369304 | val_acc=93.1700000% | interpolacja=False | soft_intepolacja=False
+[Epoch 24] train_loss=0.239750 | train_acc=93.161667% | train_correct=55897 | train_total=60000 | val_loss=0.2349279 | val_acc=93.2400000% | interpolacja=False | soft_intepolacja=False
+[Epoch 25] train_loss=0.237315 | train_acc=93.246667% | train_correct=55948 | train_total=60000 | val_loss=0.2327393 | val_acc=93.3000000% | interpolacja=False | soft_intepolacja=False
+[Epoch 26] train_loss=0.235098 | train_acc=93.301667% | train_correct=55981 | train_total=60000 | val_loss=0.2308471 | val_acc=93.3800000% | interpolacja=False | soft_intepolacja=False
+[Epoch 27] train_loss=0.232944 | train_acc=93.405000% | train_correct=56043 | train_total=60000 | val_loss=0.2286132 | val_acc=93.4200000% | interpolacja=False | soft_intepolacja=False
+[Epoch 28] train_loss=0.230840 | train_acc=93.441667% | train_correct=56065 | train_total=60000 | val_loss=0.2268727 | val_acc=93.5000000% | interpolacja=False | soft_intepolacja=False
+[Epoch 29] train_loss=0.228728 | train_acc=93.506667% | train_correct=56104 | train_total=60000 | val_loss=0.2253971 | val_acc=93.4300000% | interpolacja=False | soft_intepolacja=False
+[Epoch 30] train_loss=0.226800 | train_acc=93.563333% | train_correct=56138 | train_total=60000 | val_loss=0.2234800 | val_acc=93.5300000% | interpolacja=False | soft_intepolacja=False
+Best val_acc: 93.53%, on epoch: 30

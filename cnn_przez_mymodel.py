@@ -181,9 +181,9 @@ if __name__ == "__main__":
 
     # Sam trening lub trening + kompresja iteracyjna (jak w Twoim API)
     if args.compress:
-        steps, alive_after = model.kompresja_iteracyjna(
-            calkowity_stopien_kompresji=args.C,
-            rozmiar_kroku=args.step,
+        steps, alive_after = model.iterative_compression(
+            total_compression_goal=args.C,
+            step_size=args.step,
             log_dir=args.log_dir,
             include_bias_report=True,
         )

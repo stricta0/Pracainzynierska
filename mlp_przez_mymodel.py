@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from myModel import MyModel, TrainConfig
 
 
-class MLP_Whole(MyModel):
+class MLP1_ByMyModel(MyModel):
     class Net(nn.Module):
         def __init__(self, in_dim: int = 28 * 28, hidden: int = 128, num_classes: int = 10):
             super().__init__()
@@ -31,7 +31,7 @@ class MLP_Whole(MyModel):
 
     # wymagane przez MyModel
     def build_model(self) -> nn.Module:
-        return MLP_Whole.Net(hidden=self.hidden, num_classes=self.num_classes)
+        return MLP1_ByMyModel.Net(hidden=self.hidden, num_classes=self.num_classes)
 
     # uzupełnienia do logów 1:1
     def extra_log_context(self) -> str:
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         use_cache=True if args.use_cache else False,
     )
     print("inicjalizacja modelu")
-    model = MLP_Whole(cfg, hidden=args.hidden)
+    model = MLP1_ByMyModel(cfg, hidden=args.hidden)
 
     # Przykład 1: sam trening (logi w args.log_file)
 
@@ -92,9 +92,9 @@ if __name__ == "__main__":
     if args.compress:
         # katalog na logi kompresji
         print(f"Rozpoczynam kompresje do katalogu {args.log_dir}")
-        steps, alive_after = model.kompresja_iteracyjna(
-            calkowity_stopien_kompresji=args.C,
-            rozmiar_kroku=args.step,
+        steps, alive_after = model.iterative_compression(
+            total_compression_goal=args.C,
+            step_size=args.step,
             log_dir=args.log_dir,
             include_bias_report=True,
         )

@@ -626,5 +626,5 @@ class CreatorWykresow:
 
 if __name__ == "__main__":
     creator = CreatorWykresow()
-    creator.stworz_wszystkie_wykresy_double_descent()
+    creator.stworz_wykres_kompresja("/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/kompresja/mlp3000/kompresja.txt", "mlp", "/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/kompresja/mlp3000/")
 

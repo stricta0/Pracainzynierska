@@ -1,6 +1,3 @@
-# MyModel.py
-# Bazowy szkielet pod MLP / RRF / CNN z logowaniem 1:1 jak w Twoim kodzie
-# ─────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
 import os
@@ -14,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.utils.prune as prune
 
-from txt_loger import Loger
+from txt_logger import Logger
 from download_datasets import DatasetsManager
 
 
@@ -46,7 +43,7 @@ class MyModel:
 
     def __init__(self, cfg: TrainConfig):
         self.cfg = cfg
-        self.loger = Loger(file_name=cfg.log_file)
+        self.loger = Logger(file_name=cfg.log_file)
         self.datasets_menadger = DatasetsManager()
         self.theta0: Dict[str, torch.Tensor] = {}
         self.prune_bias: bool = False  # czy ciąć biasy przy kompresji (domyślnie nie)
@@ -406,7 +403,7 @@ class MyModel:
         return "PRUN | " + " | ".join(parts)
 
     # ─── Pruning i reset ────────────────────────────────────────────────────
-    def usun_s_percent_wag_z_modelu(self, s_percent: float, include_bias: bool = False):
+    def delete_s_percent_of_weights(self, s_percent: float, include_bias: bool = False):
         s = float(s_percent) / 100.0
         assert 0.0 < s < 1.0, "s_percent musi być w (0, 100)."
 
@@ -423,17 +420,17 @@ class MyModel:
             k = max(1, int(s * alive))
             prune.l1_unstructured(layer, name=pname, amount=k)
 
-    def kompresuj(self, s_percent: float, include_bias: bool = False):
+    def compress(self, s_percent: float, include_bias: bool = False):
         if not self.theta0:
             raise RuntimeError("Brak θ0. Najpierw wywołaj snapshot_theta0().")
-        self.usun_s_percent_wag_z_modelu(s_percent, include_bias=include_bias)
+        self.delete_s_percent_of_weights(s_percent, include_bias=include_bias)
         self.reset_unpruned_to_theta0()
 
     # ─── Oblicz liczbę kroków do kompresji ──────────────────────────────────
-    def licz_kroki_do_kompresji(self, calkowity_stopien_kompresji_w_procentach: float,
-                                rozmiar_kroku_w_procentach: float) -> Tuple[int, float]:
-        C = float(calkowity_stopien_kompresji_w_procentach)
-        s = float(rozmiar_kroku_w_procentach)
+    def count_steps_for_iterative_compression(self, total_compression_goal: float,
+                                              step_size: float) -> Tuple[int, float]:
+        C = float(total_compression_goal)
+        s = float(step_size)
         if C <= 0:
             return 0, 100.0
         if C >= 100:
@@ -451,14 +448,14 @@ class MyModel:
         return n, alive
 
     # ─── Iteracyjna kompresja (logi 1:1) ────────────────────────────────────
-    def kompresja_iteracyjna(self, calkowity_stopien_kompresji: float, rozmiar_kroku: float,
-                             log_dir: str, include_bias_report: bool = True) -> Tuple[int, float]:
-        n_steps, alive_after = self.licz_kroki_do_kompresji(calkowity_stopien_kompresji, rozmiar_kroku)
+    def iterative_compression(self, total_compression_goal: float, step_size: float,
+                              log_dir: str, include_bias_report: bool = True) -> Tuple[int, float]:
+        n_steps, alive_after = self.count_steps_for_iterative_compression(total_compression_goal, step_size)
         os.makedirs(log_dir, exist_ok=False)
 
         # Nagłówek kompresji
         self.loger.set_file_name(os.path.join(log_dir, "kompresja.txt"))
-        self.loger.add_line_to_file(self._args_line() + f" | calkowity_oczekiwany_stopien_kompresji={calkowity_stopien_kompresji} | rozmiar_kroku={rozmiar_kroku}")
+        self.loger.add_line_to_file(self._args_line() + f" | calkowity_oczekiwany_stopien_kompresji={total_compression_goal} | rozmiar_kroku={step_size}")
 
         # Snapshot θ0
         self.snapshot_theta0()
@@ -478,7 +475,7 @@ class MyModel:
             )
 
             # prune + reset (przygotowuje stan pod kolejny cykl)
-            self.kompresuj(rozmiar_kroku, include_bias=self.prune_bias)
+            self.compress(step_size, include_bias=self.prune_bias)
 
         # Końcowe domknięcie: jeszcze jeden trening po ostatnim prune
         self.loger.set_file_name(os.path.join(log_dir, f"trening_{n_steps}.txt"))
@@ -492,37 +489,3 @@ class MyModel:
 
         return n_steps, alive_after
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Przykład minimalnej podklasy (dla testów struktury) – do zastąpienia realnym
-# MLP/RRF/CNN w osobnych plikach.
-# ─────────────────────────────────────────────────────────────────────────────
-class _DummyLinearNet(MyModel):
-    class Net(nn.Module):
-        def __init__(self, in_dim: int = 28*28, hidden: int = 128, num_classes: int = 10):
-            super().__init__()
-            self.fc1 = nn.Linear(in_dim, hidden)
-            self.fc2 = nn.Linear(hidden, num_classes)
-        def forward(self, x):
-            x = x.flatten(1)
-            x = F.relu(self.fc1(x))
-            return self.fc2(x)
-
-    def __init__(self, cfg: TrainConfig, hidden: int = 128):
-        self.hidden = hidden
-        super().__init__(cfg)
-
-    def build_model(self) -> nn.Module:
-        return _DummyLinearNet.Net(hidden=self.hidden, num_classes=self.num_classes)
-
-    def extra_log_context(self) -> str:
-        return f"hidden={self.hidden}"
-
-
-if __name__ == "__main__":
-    # Krótki smoke test struktury; właściwe klasy (MLP_Whole etc.) w osobnych plikach.
-    cfg = TrainConfig(dataset_name="mnist", epochs=5, patience=2, log_file="_base_smoke.txt", model_name="MLP")
-    model = _DummyLinearNet(cfg, hidden=64)
-    model.train_model()
-    # steps, alive = model.kompresja_iteracyjna(90, 10, "_kompresja_smoke")
-    # print("done", steps, alive)

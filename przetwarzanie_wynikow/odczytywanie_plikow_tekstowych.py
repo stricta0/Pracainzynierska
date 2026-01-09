@@ -7,8 +7,54 @@ class TextFileReader:
             plik = f.read().strip().split("\n")
             start_info = TextFileReader._read_start_data_plik_double_descent(plik)
             wartosci_na_epokach = TextFileReader._stworz_slownik_wynikow_double_descent(plik)
-            max_val_acc_epoka_nr, min_vall_loss_epoka_nr = TextFileReader._find_best_vall_acc_and_vall_loss_epochs(wartosci_na_epokach)
+            max_val_acc_epoka_nr, min_vall_loss_epoka_nr = TextFileReader._find_best_val_acc_and_val_loss_epochs(wartosci_na_epokach)
         return start_info, wartosci_na_epokach, max_val_acc_epoka_nr, min_vall_loss_epoka_nr
+
+    @staticmethod
+    def odczytaj_plik_kompresja(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            plik = f.read().strip().split("\n")
+        pierwsza_linia = plik.pop(0).strip().split("|")
+        statystyki = {}
+        for element in pierwsza_linia:
+            try:
+                element = element.strip().split("=")
+                statystyki[element[0].strip()] = element[1].strip()
+            except Exception as e:
+                print(f"podczas odczytywania pliku doszlo do wyjatku: {e}")
+        wszystkie_wartosci = {}
+        for linia in plik:
+            linia_copy = linia
+            linia = linia.strip().split("|")
+            index = int(linia.pop(0).strip())
+            tryb = linia.pop(0).strip()
+            val_acc = float(linia.pop().strip().split(":")[1].strip())
+            val_loss = float(linia.pop().strip().split(":")[1].strip())
+
+            rozmiary = linia
+            rozmiary_koncowe = {}
+            pierwszy_rozmiar = None
+            for rozmiar in rozmiary:
+                rozmiar = rozmiar.strip().split(" ")
+                name = rozmiar[0].strip()
+                fraction = {"licznik": int(rozmiar[1].strip().split("/")[0]), "mianownik": int(rozmiar[1].strip().split("/")[1])}
+                in_percentage = float(rozmiar[2].strip()[1:-2])
+                rozmiary_koncowe[name] = {"fraction": fraction, "in_percentage": in_percentage}
+                if pierwszy_rozmiar is None:
+                    pierwszy_rozmiar = in_percentage
+            wszystkie_wartosci_obj = {
+                "linia": linia_copy,
+                "tryb": tryb,
+                "val_acc": val_acc,
+                "val_loss": val_loss,
+                "rozmiar": pierwszy_rozmiar,
+                "rozmiary": rozmiary_koncowe,
+            }
+            wszystkie_wartosci[index] = wszystkie_wartosci_obj
+        return statystyki, wszystkie_wartosci
+
+
+
 
     @staticmethod
     def _stworz_slownik_wynikow_double_descent(file, start_data_line_index=3):
@@ -29,7 +75,7 @@ class TextFileReader:
         for element in start_data:
             elements = element.split("=")
 
-            start_data_dict[elements[0]] = TextFileReader._change_type_from_file_string(elements[1])
+            start_data_dict[elements[0]] = TextFileReader._cast_value_into_fitting_data_type(elements[1])
         return start_data_dict
 
     @staticmethod
@@ -56,7 +102,7 @@ class TextFileReader:
             element = element.strip()
             elements = element.split("=")
             value = elements[1]
-            value = TextFileReader._change_type_from_file_string(value)
+            value = TextFileReader._cast_value_into_fitting_data_type(value)
             res_dict[elements[0]] = value
 
         return res_dict
@@ -73,7 +119,7 @@ class TextFileReader:
             return False
 
     @staticmethod
-    def _change_type_from_file_string(value):
+    def _cast_value_into_fitting_data_type(value):
         """
         zamienia value na float, int, bool lub string w zaleznosci od jak wyglada value
         """
@@ -96,7 +142,7 @@ class TextFileReader:
         return value
 
     @staticmethod
-    def _find_best_vall_acc_and_vall_loss_epochs(slownik_po_epokach):
+    def _find_best_val_acc_and_val_loss_epochs(slownik_po_epokach):
         max_val_acc = 0.0
         min_train_loss = float("inf")
         max_val_acc_epoka_nr = -1

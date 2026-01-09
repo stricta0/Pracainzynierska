@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 
-class CreatorWykresow:
+class KreatorWykresow:
     """
     Przykład użycia (dwie serie: train i val):
 

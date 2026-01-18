@@ -11,13 +11,10 @@ class PanelKoncowyDoubleDescent:
     def __init__(self, folder_path, folder_na_wyniki_path, config_file_name="config.json"):
         with open(config_file_name) as json_file:
             self.config = json.load(json_file)
-
         self.folder_path = folder_path
         self.folder_na_wyniki_path = folder_na_wyniki_path
-
         self.nazwa_folderu_z_wykresami = self.config["double_descent"]["nazwa_folderu_z_wykresami"]
         self.nazwa_folderu_z_wynikami_analizy_txt = self.config["double_descent"]["nazwa_folderu_z_wynikami_w_plikach_txt"]
-
         self.ignore_file_names = self.config["double_descent"]["ignorowane"]["pliki"]
         self.ignorowane_rozszerzenia = self.config["double_descent"]["ignorowane"]["rozszerzenia"]
         self.ignorowane_foldery = list(set(self.config["double_descent"]["ignorowane"]["ignorowane_foldery"] + [self.nazwa_folderu_z_wykresami, self.nazwa_folderu_z_wynikami_analizy_txt]))
@@ -38,6 +35,10 @@ class PanelKoncowyDoubleDescent:
             type_name = dane_wykresu["type"]
             file_name = dane_wykresu["file_name"]
             best_at = dane_wykresu["best_at"]
+            if "add_line_at_zero" in dane_wykresu:
+                add_line_at_zero = dane_wykresu["add_line_at_zero"]
+            else:
+                add_line_at_zero = False
             fig, ax = KreatorWykresow.create_plot(
                 x, y,
                 plot_name=title,
@@ -49,7 +50,8 @@ class PanelKoncowyDoubleDescent:
                 marker="o",
                 yscale=yscale, #"linear" | "log" | "symlog" | "logit"
                 xscale=xscale,
-                add_line_at_zero=False,
+                add_line_at_zero=add_line_at_zero,
+                ignore_title=True
             )
 
     def stworz_wykresy_z_danych_folderu_double_descent_po_liczbie_epok(self, save_path=None, lista_plikow=None, yscale="linear",
@@ -78,6 +80,12 @@ class PanelKoncowyDoubleDescent:
                 yscale=yscale,  # "linear" | "log" | "symlog" | "logit"
                 xscale=xscale,
                 add_line_at_zero=False,
+                color_by_size=True,
+                size_scale="log",
+                cmap_name="RdYlGn_r",
+                show_legend=False,
+                colorbar_label="rozmiar modelu (log)",
+                ignore_title=True
             )
 
     def zapisz_statystyki_z_danych_folderu_double_descent(self, lista_plikow=None, save_path=None):
@@ -89,8 +97,20 @@ class PanelKoncowyDoubleDescent:
         create_statistic_file_obj = StatisticsFileBuilder(lista_plikow, self.names_for_size_in_model_map)
 
         best_val_acc_file, best_val_loss_file = create_statistic_file_obj.get_data_from_files()
+        lacznie_acc_and_loss = {'model_size' : best_val_acc_file['model_size'],
+                                "train_loss_best_acc": best_val_acc_file["train_loss"],
+                                "val_loss_best_acc": best_val_acc_file["val_loss"],
+                                "val_acc_best_acc": best_val_acc_file["val_acc"],
+                                "epoch_best_acc": best_val_acc_file["epoch"],
+
+                                "train_loss_best_loss": best_val_loss_file["train_loss"],
+                                "val_loss_best_loss": best_val_loss_file["val_loss"],
+                                "val_acc_best_loss": best_val_loss_file["val_acc"],
+                                "epoch_best_loss": best_val_loss_file["epoch"],
+                                }
         text_file_zwykla_kolejnosc_acc = create_statistic_file_obj.create_string_from_dict(best_val_acc_file)
         test_file_zwykla_kolejnosc_loss = create_statistic_file_obj.create_string_from_dict(best_val_loss_file)
+        text_file_zwykla_kolejnosc_acc_and_loss = create_statistic_file_obj.create_string_from_dict(lacznie_acc_and_loss)
 
         folder_na_pliki = os.path.join(save_path, self.nazwa_folderu_z_wynikami_analizy_txt)
         os.makedirs(folder_na_pliki, exist_ok=True)
@@ -98,10 +118,13 @@ class PanelKoncowyDoubleDescent:
         # zwykła kolejność oba modele
         zwykla_kolejnosc_acc_txt = os.path.join(folder_na_pliki, "zwykla_kolejnosc_acc.txt")
         zwykla_kolejnosc_loss_txt = os.path.join(folder_na_pliki, "zwykla_kolejnosc_loss.txt")
+        zwykla_kolejnosc_acc_and_loss_txt = os.path.join(folder_na_pliki, "zwykla_kolejnosc_acc_and_loss.txt")
         with open(zwykla_kolejnosc_acc_txt, "w", encoding="utf-8") as f:
             f.write(text_file_zwykla_kolejnosc_acc)
         with open(zwykla_kolejnosc_loss_txt, "w", encoding="utf-8") as f:
             f.write(test_file_zwykla_kolejnosc_loss)
+        with open(zwykla_kolejnosc_acc_and_loss_txt, "w", encoding="utf-8") as f:
+            f.write(text_file_zwykla_kolejnosc_acc_and_loss)
 
         # posortowane po val_acc
         # best val acc epoch
@@ -133,22 +156,27 @@ class PanelKoncowyDoubleDescent:
             f.write(text_file_acc_sort_acc)
 
 class DoubleDescentRunner:
-    def przeprowadz_analize_double_descent_w_folderze(self, folder_path, save_wyniki_path):
+    def przeprowadz_analize_double_descent_w_folderze(self, folder_path, save_wyniki_path, minimal=False):
         panel = PanelKoncowyDoubleDescent(folder_path, save_wyniki_path)
-        panel.stworz_wykresy_z_danych_folderu_double_descent_best_models(yscale="linear", xscale="linear") #"linear" | "log" | "symlog" | "logit"
-        panel.stworz_wykresy_z_danych_folderu_double_descent_best_models(yscale="log", xscale="linear")
-        panel.stworz_wykresy_z_danych_folderu_double_descent_best_models(yscale="linear", xscale="log")
-        panel.stworz_wykresy_z_danych_folderu_double_descent_best_models(yscale="log", xscale="log")
+        print(f"przeprowadzam anazlie double descent na {folder_path} i zapisje na {save_wyniki_path}")
+        if not minimal:
+            panel.stworz_wykresy_z_danych_folderu_double_descent_best_models(yscale="linear", xscale="linear") #"linear" | "log" | "symlog" | "logit"
+            panel.stworz_wykresy_z_danych_folderu_double_descent_best_models(yscale="log", xscale="linear")
+            panel.stworz_wykresy_z_danych_folderu_double_descent_best_models(yscale="linear", xscale="log")
+            panel.stworz_wykresy_z_danych_folderu_double_descent_best_models(yscale="log", xscale="log")
 
-        panel.stworz_wykresy_z_danych_folderu_double_descent_po_liczbie_epok(yscale="linear", xscale="linear")
-        panel.stworz_wykresy_z_danych_folderu_double_descent_po_liczbie_epok(yscale="linear", xscale="log")
-        panel.stworz_wykresy_z_danych_folderu_double_descent_po_liczbie_epok(yscale="log", xscale="linear")
-        panel.stworz_wykresy_z_danych_folderu_double_descent_po_liczbie_epok(yscale="log", xscale="log")
+            panel.stworz_wykresy_z_danych_folderu_double_descent_po_liczbie_epok(yscale="linear", xscale="linear")
+            panel.stworz_wykresy_z_danych_folderu_double_descent_po_liczbie_epok(yscale="linear", xscale="log")
+            panel.stworz_wykresy_z_danych_folderu_double_descent_po_liczbie_epok(yscale="log", xscale="linear")
+            panel.stworz_wykresy_z_danych_folderu_double_descent_po_liczbie_epok(yscale="log", xscale="log")
+        else:
+            panel.stworz_wykresy_z_danych_folderu_double_descent_best_models(yscale="linear", xscale="log")
+            panel.stworz_wykresy_z_danych_folderu_double_descent_po_liczbie_epok(yscale="linear", xscale="log")
         panel.zapisz_statystyki_z_danych_folderu_double_descent()
 
 
 
-    def przeprowadz_analize_double_descent_w_folderze_rekurencyjnie(self, folder_path, log_warn=False):
+    def przeprowadz_analize_double_descent_w_folderze_rekurencyjnie(self, folder_path, log_warn=False, minimal=False):
         """
         Przechodzi po folderze i wszystkich jego podfolderach.
         Dla każdego katalogu, który zawiera co najmniej jeden plik (nie katalog),
@@ -174,7 +202,8 @@ class DoubleDescentRunner:
         if has_any_file:
             try:
                 # save_wyniki_path ustawiamy na ten sam katalog
-                self.przeprowadz_analize_double_descent_w_folderze(str(root), str(root))
+                print(f"Przeprowadzam analize w folderze {root}")
+                self.przeprowadz_analize_double_descent_w_folderze(str(root), str(root), minimal=minimal)
             except Exception as e:
                 # Nie przerywamy całej rekursji, tylko raportujemy i idziemy dalej
                 if log_warn:
@@ -192,11 +221,9 @@ class DoubleDescentRunner:
             # Opcjonalnie: pomiń linki symboliczne do katalogów, aby uniknąć pętli
             if sub.is_symlink():
                 continue
-            self.przeprowadz_analize_double_descent_w_folderze_rekurencyjnie(sub)
-
-
+            self.przeprowadz_analize_double_descent_w_folderze_rekurencyjnie(sub, log_warn=log_warn, minimal=minimal)
 
 if __name__ == "__main__":
-    folder_path = "/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy/"
+    folder_path = "/home/miku/PycharmProjects/Pracainzynierska/wyniki_eksperymentow/wykresy/rff"
     runner = DoubleDescentRunner()
-    runner.przeprowadz_analize_double_descent_w_folderze_rekurencyjnie(folder_path, True)
+    runner.przeprowadz_analize_double_descent_w_folderze_rekurencyjnie(folder_path, True, True)

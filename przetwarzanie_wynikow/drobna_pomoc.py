@@ -1,0 +1,1 @@
+def wyciagnij_pliki(folder_gl, lista_nazw_plikow)

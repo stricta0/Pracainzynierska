@@ -74,7 +74,8 @@ class TextFileReader:
         start_data_dict = {}
         for element in start_data:
             elements = element.split("=")
-
+            if len(elements) != 2:
+                continue
             start_data_dict[elements[0]] = TextFileReader._cast_value_into_fitting_data_type(elements[1])
         return start_data_dict
 

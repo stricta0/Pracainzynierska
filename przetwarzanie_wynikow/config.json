@@ -5,7 +5,7 @@
     "names_for_size_in_model_map": {
       "mlp": "hidden",
       "mlp2": "hidden",
-      "rff": "n_features",
+      "rff": "n_features(N)",
       "cnn": "ch1"
     },
     "ignorowane": {

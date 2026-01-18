@@ -59,7 +59,8 @@ class PanelKoncowyLTH:
                         yscale=yscale, #"linear" | "log" | "symlog" | "logit"
                         xscale=xscale,
                         add_line_at_zero=False,
-                        odwrocona_os_x=True
+                        odwrocona_os_x=True,
+                        ignore_title=True
                     )
 
     def _stworz_dane_do_wykresow(self):

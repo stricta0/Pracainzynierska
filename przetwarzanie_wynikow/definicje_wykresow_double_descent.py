@@ -7,7 +7,7 @@ class DefinicjeWykresowDoubleDescent:
         self.files_list = files_list
 
         #co uznajemy za "size" modelu
-        self.names_for_size_in_model_map = {"mlp" : "hidden", "rff" : "n_features", "cnn": "ch1"}
+        self.names_for_size_in_model_map = {"mlp" : "hidden", "mlp2": "hidden", "rff" : "n_features(N)", "cnn": "ch1"}
 
         self.size_tab = [] #tablica wielkosci modeli
 
@@ -41,57 +41,135 @@ class DefinicjeWykresowDoubleDescent:
         ]
 
         y_valacc_best_val_acc = [
-            {"tab": self.train_loss_tab_best_val_acc, "name": "train loss"},
-            {"tab": self.val_acc_tab_best_val_acc, "name": "validation accuracy"},
+            {"tab": self.train_loss_tab_best_val_acc, "name": "strata treningowa"},
+            {"tab": self.val_acc_tab_best_val_acc, "name": "dokładność testowa"},
         ]
         y_valacc_best_val_loss = [
-            {"tab": self.train_loss_tab_best_val_loss, "name": "train loss"},
-            {"tab": self.val_acc_tab_best_val_loss, "name": "validation accuracy"},
+            {"tab": self.train_loss_tab_best_val_loss, "name": "strata treningowa"},
+            {"tab": self.val_acc_tab_best_val_loss, "name": "dokładność testowa"},
         ]
         y_valloss_best_val_acc = [
-            {"tab": self.train_loss_tab_best_val_acc, "name": "train loss"},
-            {"tab": self.val_loss_tab_best_val_acc, "name": "validation loss"},
+            {"tab": self.train_loss_tab_best_val_acc, "name": "strata treningowa"},
+            {"tab": self.val_loss_tab_best_val_acc, "name": "strata testowa"},
         ]
         y_valloss_best_val_loss = [
-            {"tab": self.train_loss_tab_best_val_loss, "name": "train loss"},
-            {"tab": self.val_loss_tab_best_val_loss, "name": "validation loss"},
+            {"tab": self.train_loss_tab_best_val_loss, "name": "strata treningowa"},
+            {"tab": self.val_loss_tab_best_val_loss, "name": "strata testowa"},
         ]
 
         y_valacc_best_val_acc_poj = [
-            {"tab": self.val_acc_tab_best_val_acc, "name": "validation accuracy"},
+            {"tab": self.val_acc_tab_best_val_acc, "name": "dokładność testowa"},
         ]
         y_valacc_best_val_loss_poj = [
-            {"tab": self.val_acc_tab_best_val_loss, "name": "validation accuracy"},
+            {"tab": self.val_acc_tab_best_val_loss, "name": "dokładność testowa"},
         ]
         y_valloss_best_val_acc_poj = [
-            {"tab": self.val_loss_tab_best_val_acc, "name": "validation loss"},
+            {"tab": self.val_loss_tab_best_val_acc, "name": "strata testowa"},
         ]
         y_valloss_best_val_loss_poj = [
-            {"tab": self.val_loss_tab_best_val_loss, "name": "validation loss"},
+            {"tab": self.val_loss_tab_best_val_loss, "name": "strata testowa"},
         ]
 
         y_train_loss_best_val_acc = [
-            {"tab": self.train_loss_tab_best_val_acc, "name": "train loss"},
+            {"tab": self.train_loss_tab_best_val_acc, "name": "strata treningowa"},
         ]
         y_train_loss_best_val_loss = [
-            {"tab": self.train_loss_tab_best_val_loss, "name": "train loss"},
+            {"tab": self.train_loss_tab_best_val_loss, "name": "strata treningowa"},
         ]
 
 
         model_name, dataset = self._get_model_name_and_dataset(self.files_list)
         dane_do_wykresu = [
-            {"x": x, "y": y_valacc_best_val_acc, "title": f"validation accuracy vs train loss (best validation accuracy model), model: {model_name}, dataset: {dataset}", "file_name": f"val_acc_vs_train_loss_best_val_acc_model_{model_name}_{dataset}", "type": "acc", "best_at": "val_acc"},
-            {"x": x, "y": y_valacc_best_val_loss, "title": f"validation accuracy vs train loss (best validation loss model), model: {model_name}, dataset: {dataset}", "file_name": f"val_acc_vs_train_loss_best_val_loss_model_{model_name}_{dataset}", "type": "acc", "best_at": "val_loss"},
-            {"x": x, "y": y_valloss_best_val_acc, "title": f"validation loss vs train loss (best validation accuracy model), model: {model_name}, dataset: {dataset}", "file_name": f"val_loss_vs_train_loss_best_val_acc_model_{model_name}_{dataset}", "type": "loss", "best_at": "val_acc"},
-            {"x": x, "y": y_valloss_best_val_loss, "title": f"validation loss vs train loss (best validation loss model), model: {model_name}, dataset: {dataset}", "file_name": f"val_loss_vs_train_loss_best_val_loss_model_{model_name}_{dataset}", "type": "loss", "best_at": "val_loss"},
+            {
+                "x": x,
+                "y": y_valacc_best_val_acc,
+                "title": f"Dokładność testowa i strata treningowa w zależności od rozmiaru modelu \n(checkpoint: najlepsza dokładność testowa), model: {model_name}, zbiór: {dataset}",
+                "file_name": f"test_acc_vs_train_loss_best_test_acc_model_{model_name}_{dataset}",
+                "type": "acc",
+                "best_at": "val_acc",
+                "add_line_at_zero": True,
+            },
+            {
+                "x": x,
+                "y": y_valacc_best_val_loss,
+                "title": f"Dokładność testowa i strata treningowa w zależności od rozmiaru modelu \n(checkpoint: najmniejsza strata testowa), model: {model_name}, zbiór: {dataset}",
+                "file_name": f"test_acc_vs_train_loss_best_test_loss_model_{model_name}_{dataset}",
+                "type": "acc",
+                "best_at": "val_loss",
+            },
+            {
+                "x": x,
+                "y": y_valloss_best_val_acc,
+                "title": f"Strata testowa i treningowa w zależności od rozmiaru modelu \n(checkpoint: najlepsza dokładność testowa), model: {model_name}, zbiór: {dataset}",
+                "file_name": f"test_loss_vs_train_loss_best_test_acc_model_{model_name}_{dataset}",
+                "type": "loss",
+                "best_at": "val_acc",
+                "add_line_at_zero": True,
+            },
+            {
+                "x": x,
+                "y": y_valloss_best_val_loss,
+                "title": f"Strata testowa i treningowa w zależności od rozmiaru modelu \n(checkpoint: najmniejsza strata testowa), model: {model_name}, zbiór: {dataset}",
+                "file_name": f"test_loss_vs_train_loss_best_test_loss_model_{model_name}_{dataset}",
+                "type": "loss",
+                "best_at": "val_loss",
+                "add_line_at_zero": True,
+            },
 
-            {"x": x_poj, "y": y_valacc_best_val_acc_poj, "title": f"validation acc (best validation val_acc model), model: {model_name}, dataset: {dataset}", "file_name": f"val_acc_best_val_acc_model_{model_name}_{dataset}", "type": "single", "best_at": "val_acc"},
-            {"x": x_poj, "y": y_valacc_best_val_loss_poj, "title": f"validation acc (best validation loss model), model: {model_name}, dataset: {dataset}", "file_name": f"val_acc_best_val_loss_model_{model_name}_{dataset}", "type": "single", "best_at": "val_loss"},
-            {"x": x_poj, "y": y_valloss_best_val_acc_poj, "title": f"validation loss (best validation acc model), model: {model_name}, dataset: {dataset}", "file_name": f"val_loss_best_val_acc_model_{model_name}_{dataset}", "type": "single", "best_at": "val_acc"},
-            {"x": x_poj, "y": y_valloss_best_val_loss_poj, "title": f"validation loss vs train loss (best validation loss model), model: {model_name}, dataset: {dataset}", "file_name": f"val_loss_best_val_loss_model_{model_name}_{dataset}", "type": "single", "best_at": "val_loss"},
-            {"x": x_poj, "y": y_train_loss_best_val_acc, "title": f"train loss (best validation acc model), model: {model_name}, dataset: {dataset}", "file_name": f"train_loss_best_val_acc_model_{model_name}_{dataset}", "type": "single", "best_at": "val_acc"},
-            {"x": x_poj, "y": y_train_loss_best_val_loss, "title": f"train loss (best validation loss model), model: {model_name}, dataset: {dataset}", "file_name": f"train_loss_best_val_loss_model_{model_name}_{dataset}", "type": "single", "best_at": "val_loss"},
-                ]
+            {
+                "x": x_poj,
+                "y": y_valacc_best_val_acc_poj,
+                "title": f"Dokładność testowa w zależności od rozmiaru modelu \n(checkpoint: najlepsza dokładność testowa), model: {model_name}, zbiór: {dataset}",
+                "file_name": f"test_acc_best_test_acc_model_{model_name}_{dataset}",
+                "type": "single",
+                "best_at": "val_acc",
+            },
+            {
+                "x": x_poj,
+                "y": y_valacc_best_val_loss_poj,
+                "title": f"Dokładność testowa w zależności od rozmiaru modelu \n(checkpoint: najmniejsza strata testowa), model: {model_name}, zbiór: {dataset}",
+                "file_name": f"test_acc_best_test_loss_model_{model_name}_{dataset}",
+                "type": "single",
+                "best_at": "val_loss",
+            },
+            {
+                "x": x_poj,
+                "y": y_valloss_best_val_acc_poj,
+                "title": f"Strata testowa w zależności od rozmiaru modelu \n(checkpoint: najlepsza dokładność testowa), model: {model_name}, zbiór: {dataset}",
+                "file_name": f"test_loss_best_test_acc_model_{model_name}_{dataset}",
+                "type": "single",
+                "best_at": "val_acc",
+                "add_line_at_zero": True,
+            },
+            {
+                "x": x_poj,
+                "y": y_valloss_best_val_loss_poj,
+                "title": f"Strata testowa w zależności od rozmiaru modelu \n(checkpoint: najmniejsza strata testowa), model: {model_name}, zbiór: {dataset}",
+                "file_name": f"test_loss_best_test_loss_model_{model_name}_{dataset}",
+                "type": "single",
+                "best_at": "val_loss",
+                "add_line_at_zero": True,
+            },
+            {
+                "x": x_poj,
+                "y": y_train_loss_best_val_acc,
+                "title": f"Strata treningowa w zależności od rozmiaru modelu \n(checkpoint: najlepsza dokładność testowa), model: {model_name}, zbiór: {dataset}",
+                "file_name": f"train_loss_best_test_acc_model_{model_name}_{dataset}",
+                "type": "single",
+                "best_at": "val_acc",
+                "add_line_at_zero": True,
+            },
+            {
+                "x": x_poj,
+                "y": y_train_loss_best_val_loss,
+                "title": f"Strata treningowa w zależności od rozmiaru modelu \n(checkpoint: najmniejsza strata testowa), model: {model_name}, zbiór: {dataset}",
+                "file_name": f"train_loss_best_test_loss_model_{model_name}_{dataset}",
+                "type": "single",
+                "best_at": "val_loss",
+                "add_line_at_zero": True,
+            },
+        ]
+
         return dane_do_wykresu
 
     def get_dane_do_wszystkich_wykresow_po_liczbie_epok(self):
@@ -120,14 +198,29 @@ class DefinicjeWykresowDoubleDescent:
                 lista_val_loss.append(warotsci["val_loss"])
 
             x.append({"tab": lista_epok.copy(), "name": "epoka"})
-            y_acc.append({"tab": lista_val_acc.copy(), "name": f"size {model_size}"})
-            y_loss.append({"tab": lista_val_loss.copy(), "name": f"size {model_size}"})
+            y_acc.append({"tab": lista_val_acc.copy(), "name": f"size {model_size}", "size": float(model_size)})
+            y_loss.append({"tab": lista_val_loss.copy(), "name": f"size {model_size}", "size": float(model_size)})
 
         model_name, dataset = self._get_model_name_and_dataset(self.files_list)
         dane_do_wykresu = [
-            {"x": x, "y": y_acc, "title": f"validation accuracy on epoch (models by size), model: {model_name}, dataset: {dataset}", "file_name": f"val_acc_vs_epoch_{model_name}_{dataset}", "type": "acc", "y_name": "validation accuracy"},
-            {"x": x, "y": y_loss, "title": f"validation loss on epoch (models by size), model: {model_name}, dataset: {dataset}", "file_name": f"val_loss_vs_train_epoch_{model_name}_{dataset}", "type": "loss", "y_name": "validation loss"},
-                ]
+            {
+                "x": x,
+                "y": y_acc,
+                "title": f"Dokładność testowa w kolejnych epokach dla modeli o różnym rozmiarze\n model: {model_name}, zbiór: {dataset}",
+                "file_name": f"test_acc_vs_epoch_{model_name}_{dataset}",
+                "type": "acc",
+                "y_name": "dokładność testowa",
+            },
+            {
+                "x": x,
+                "y": y_loss,
+                "title": f"Strata testowa w kolejnych epokach dla modeli o różnym rozmiarze\n model: {model_name}, zbiór: {dataset}",
+                "file_name": f"test_loss_vs_epoch_{model_name}_{dataset}",
+                "type": "loss",
+                "y_name": "strata testowa",
+            },
+        ]
+
         return dane_do_wykresu
 
     def _odczytaj_dane_z_plikow_tekstowych_wykresy_po_wielkosci_modelu(self):

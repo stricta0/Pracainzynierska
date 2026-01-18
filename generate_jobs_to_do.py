@@ -63,4 +63,4 @@ def create_all(data_bases, models_names, compress=False):
 
 
 
-print(create_all(data_bases, ["MLP2"], compress=False))
+print(create_all(data_bases, ["MLP"], compress=True))

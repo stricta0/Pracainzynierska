@@ -1,0 +1,4 @@
+procent_wielkosci | val_loss | val_acc
+90.0 | 0.0983765 | 0.9713
+100.0 | 0.1028054 | 0.9702
+min size lepszy bądź równy od 100%: 90.0

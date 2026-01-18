@@ -2,6 +2,8 @@ from typing import Tuple, Sequence, Mapping, Any, List, Optional
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
+import matplotlib as mpl
+
 
 
 class KreatorWykresow:
@@ -88,7 +90,16 @@ class KreatorWykresow:
         add_line_at_zero: bool = False,           # True => pozioma przerywana linia na y=0.0
         # --- flagi wsteczne (zachowana kompatybilność) ---
         logarytmic_scale_y: bool = False,         # jeżeli yscale pozostaje "linear", to wymusi "log"
-        logarytmic_scale_x: bool = False          # jeżeli xscale pozostaje "linear", to wymusi "log"
+        logarytmic_scale_x: bool = False,          # jeżeli xscale pozostaje "linear", to wymusi "log"
+
+        color_by_size: bool = False,  # True => kolor linii zależy od yd["size"]
+        size_scale: str = "log",  # "log" | "linear"
+        cmap_name: str = "RdYlGn_r",  # zielony -> czerwony (od małego do dużego)
+        show_legend: bool = True,  # pozwala wyłączyć legendę
+        colorbar_label: str = "rozmiar modelu",
+
+        ignore_title: bool = False
+
     ) -> Tuple[plt.Figure, plt.Axes]:
         """
         Rysuje wiele linii (x vs y) na jednym wykresie. x i y to listy słowników:
@@ -133,6 +144,26 @@ class KreatorWykresow:
         all_y_values: List[np.ndarray] = []
         all_x_values: List[np.ndarray] = []
 
+        sizes: List[float] = []
+        if color_by_size:
+            for yd in y:
+                if "size" not in yd:
+                    raise KeyError("color_by_size=True wymaga, aby każda seria y miała pole 'size' (liczbowe).")
+                sizes.append(float(yd["size"]))
+
+            vmin, vmax = float(np.min(sizes)), float(np.max(sizes))
+            if size_scale == "log":
+                if vmin <= 0:
+                    raise ValueError("size_scale='log' wymaga, aby wszystkie rozmiary były > 0.")
+                norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
+            elif size_scale == "linear":
+                norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+            else:
+                raise ValueError("size_scale musi być 'log' albo 'linear'.")
+
+            cmap = mpl.cm.get_cmap(cmap_name)
+
+
         for i, (xd, yd) in enumerate(zip(x, y), start=1):
             if not isinstance(xd, Mapping) or not isinstance(yd, Mapping):
                 raise TypeError("Elementy x i y muszą być słownikami.")
@@ -153,14 +184,17 @@ class KreatorWykresow:
 
             # etykieta i kolor: preferuj dane z 'y', potem z 'x', potem domyślne
             label = yd.get("name") or xd.get("name") or f"linia_{i}"
-            color = yd.get("color", xd.get("color", default_color))
+            if color_by_size:
+                color = cmap(norm(float(yd["size"])))
+            else:
+                color = yd.get("color", xd.get("color", default_color))
 
             plot_kwargs = dict(
                 linestyle=line_style,
                 linewidth=line_width,
                 marker=(marker if marker else None),
                 markersize=marker_size,
-                alpha=alpha,
+                alpha=(0.6 if color_by_size else alpha),
                 label=label,
             )
             if color is not None:
@@ -213,14 +247,17 @@ class KreatorWykresow:
         if add_line_at_zero:
             ax.axhline(
                 0.0,
-                linestyle=grid_style if grid else "--",
+                color="black",
+                linestyle="--",
                 linewidth=1.0,
-                alpha=grid_alpha if grid else 0.5,
-                zorder=0,
+                alpha=0.5,
+                zorder=5,  # wyżej niż siatka i większość elementów
             )
 
         # --- Opisy i estetyka ---
-        ax.set_title(plot_name, fontsize=title_size)
+        if not ignore_title:
+            ax.set_title(plot_name, fontsize=title_size)
+
         ax.set_xlabel(x_name, fontsize=label_size)
         ax.set_ylabel(y_name, fontsize=label_size)
         ax.tick_params(labelsize=tick_size)
@@ -228,7 +265,15 @@ class KreatorWykresow:
         if grid:
             ax.grid(True, linestyle=grid_style, alpha=grid_alpha)
 
-        ax.legend()
+        if show_legend and not color_by_size:
+            ax.legend()
+
+        if color_by_size:
+            sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+            sm.set_array([])  # Matplotlib tego wymaga dla colorbar
+            cbar = fig.colorbar(sm, ax=ax, pad=0.02)
+            cbar.set_label(colorbar_label, fontsize=label_size)
+            cbar.ax.tick_params(labelsize=tick_size)
 
         # --- Zakres osi X / odwrócenie ---
         if odwrocona_os_x and np.isfinite(min_x) and np.isfinite(max_x):
